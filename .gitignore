@@ -1,0 +1,34 @@
+# Local library data and exports
+/data/
+/backups/
+/exports/
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+/.openai/
+/.agents/
+/.codex/
+
+# Dependencies and generated output
+/node_modules/
+/dist/
+/.next/
+/.wrangler/
+/coverage/
+*.tsbuildinfo
+
+# Operating system files
+.DS_Store

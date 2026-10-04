@@ -1,0 +1,101 @@
+{
+  "baseline": "0ce2c80f9b5f5e3eb917316f92a52b3ceaf3db06",
+  "files": [
+    {
+      "source": "app/atlas.tsx",
+      "target": "web/app/atlas.tsx",
+      "sha256": "d96107eb10b21281dfae32677a01440fd865ab5d75e0c8027cb5dc342de63f14"
+    },
+    {
+      "source": "app/globals.css",
+      "target": "web/app/globals.css",
+      "sha256": "535629f284b64c7fc7170f5561b181802045c7dad14845341a83f74c4d367492"
+    },
+    {
+      "source": "app/image-gallery.tsx",
+      "target": "web/app/image-gallery.tsx",
+      "sha256": "f3e581a0fd78b4559725e824c74052f9aa630431dbc3e0ef08ad3d22a89233f8"
+    },
+    {
+      "source": "app/tag-manager.tsx",
+      "target": "web/app/tag-manager.tsx",
+      "sha256": "db0989073f3832072b4447dd07410b891056d31de163eace226f98ea35c8cdf5"
+    },
+    {
+      "source": "lib/atlas-view.ts",
+      "target": "web/lib/atlas-view.ts",
+      "sha256": "1ba27a848455557f271e82ac41b6109935a2238d7e4a893318075371c300d453"
+    },
+    {
+      "source": "lib/inspiration-links.ts",
+      "target": "web/lib/inspiration-links.ts",
+      "sha256": "2e418a385ee55319ee6ea65f9eebbc0840e04117c6740d8ed1e34db30474a62b"
+    },
+    {
+      "source": "lib/inspiration-title-guidance.json",
+      "target": "web/lib/inspiration-title-guidance.json",
+      "sha256": "8cd9e4bb3968c071595f4df1729f72af1518a5f9d15a15160ad2b3bf83c5367a"
+    },
+    {
+      "source": "lib/utils.ts",
+      "target": "web/lib/utils.ts",
+      "sha256": "53f3d3d070f0a9082934da25b875f9499855c2b0693868dd28be8c23d8730f68"
+    },
+    {
+      "source": "components/ui/button.tsx",
+      "target": "web/components/ui/button.tsx",
+      "sha256": "cc36af0f8b5019c33cc039fbf03bb952a513072b15b55b53c592b78af3e5f4c4"
+    },
+    {
+      "source": "components/ui/dialog.tsx",
+      "target": "web/components/ui/dialog.tsx",
+      "sha256": "dce39c6adc47d997bd2567f8b7a72f466b0134715105cd42f9194007b8ecdb14"
+    },
+    {
+      "source": "components/ui/sheet.tsx",
+      "target": "web/components/ui/sheet.tsx",
+      "sha256": "63863cf2df8f8973e52b3459ac9bdbf81be1262dbc70eb53d5271ffb03488e16"
+    },
+    {
+      "source": "components/ui/input.tsx",
+      "target": "web/components/ui/input.tsx",
+      "sha256": "8c4612a7c41319ac5049daa3b34b080f9784b6245c17780eb87c127e58e473db"
+    },
+    {
+      "source": "components/ui/textarea.tsx",
+      "target": "web/components/ui/textarea.tsx",
+      "sha256": "253cdeb487c73beaaccdf47fc163e36e7d5b7ae6ddf09a4f64998a109a112979"
+    },
+    {
+      "source": "components/ui/empty.tsx",
+      "target": "web/components/ui/empty.tsx",
+      "sha256": "ae95bdcf367a076ae02e7925f14522a148798f72d9651749c6d55497dba584c0"
+    },
+    {
+      "source": "components/ui/skeleton.tsx",
+      "target": "web/components/ui/skeleton.tsx",
+      "sha256": "ba48dd5be5a6a1378bd4e011028654b5bf419f1e7d20ee4b9f8330c1264e7239"
+    },
+    {
+      "source": "components/ui/carousel.tsx",
+      "target": "web/components/ui/carousel.tsx",
+      "sha256": "b7ea0dda3903d972c186f739e23da61f547bc83b5a0bf13b16856577846d5fc3"
+    },
+    {
+      "source": "vendor/shadcn-tailwind-4.13.0.css",
+      "target": "vendor/shadcn-tailwind-4.13.0.css",
+      "sha256": "bc7d83425702955b4cb67cb14ede9d603f9d912376d57a2d81d661094d2a782a"
+    },
+    {
+      "source": "vendor/shadcn-tailwind-4.13.0.LICENSE.md",
+      "target": "vendor/shadcn-tailwind-4.13.0.LICENSE.md",
+      "sha256": "1564074e13439397221ffd522e2e504d56561994a23d371aa5e3ad43e4f5423f"
+    },
+    {
+      "source": "lib/card-placement.ts",
+      "target": "server/library.mjs",
+      "reuse": "freePosition algorithm port",
+      "sha256": "7c6d3bbfc238b2ee99267e3151645c8d183da410928a6dbc2c0ffa64604d95bb"
+    }
+  ]
+}

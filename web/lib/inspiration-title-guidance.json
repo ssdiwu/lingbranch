@@ -1,0 +1,13 @@
+{
+  "pattern": "主体：用途或适用场景",
+  "placeholder": "例如：阅读笔记：整理文章里的可用想法",
+  "hint": "保留可识别的名称，再写具体用途或场景。资料不足可标“待补用途”；你明确指定的标题会保留。",
+  "agentInstruction": "Keep a recognizable subject (project, technology or idea name) and a concrete use or scenario, preferably Subject: what it helps with. Ground the use in provided or verified note content. Avoid bare names, vague reference/explained labels, promotion and star counts. Do not describe candidate or planned capabilities as already implemented. If the purpose is unknown, keep a clearly marked draft and ask for the missing use; do not invent it. Respect an explicitly requested title. This is guidance, not a required punctuation format or automatic rewrite.",
+  "rules": [
+    "先保留可识别的项目、技术或想法名称，再说明具体用途或适用场景。",
+    "用途从已提供或已核实的正文提炼，避免只有项目名或泛泛的“参考／详解”。",
+    "不写推销语或涨星数字，不把候选能力、计划或设计建议写成已经实现。",
+    "资料不足时保留草稿并提示补用途；用户明确指定的标题优先。",
+    "这是命名引导；不强制冒号格式，不自动覆盖标题，也不调用付费模型。"
+  ]
+}

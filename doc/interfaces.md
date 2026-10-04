@@ -54,3 +54,34 @@ MCP 接收上限为 32 MiB，覆盖 20 MiB 文件的 Base64 开销。读取沿 `
 HTTP 错误为 `{code,error}`：输入 400、未认证 401、边界拒绝 403、不存在 404、冲突 409、超限 413、存储或原件故障 503。新建和编辑响应含 `outcome`，同时设置 `X-LingBranch-Outcome`。
 
 `/api/tools` 是受保护 JSON 接口，不是远程 MCP 传输端点。首版没有 OAuth、跨域调用或通用远程连接器。
+
+## 本地 CLI
+
+入口为 [cli/lingbranch.mjs](../cli/lingbranch.mjs)，调用与 MCP 相同的 `executeTool`，不另写一套资料操作。直接运行 `node /absolute/path/to/lingbranch/cli/lingbranch.mjs`；项目目录内可用 `npm run --silent cli -- ...`，npm 脚本加载本地 `.env`，直接 Node 启动不自动加载。
+
+所有命令可指定 `--data-dir <绝对目录>`，优先于 `LINGBRANCH_DATA_DIR`；未配置时仍按应用源码位置使用项目 `data/`，与当前工作目录无关。
+
+| 命令 | 行为 |
+| --- | --- |
+| `help` 或 `--help` | 命令发现、默认资料目录、重试与冲突提示 |
+| `status` | 返回目标目录与 `database_present/not_initialized`；不打开或新建数据库，不证明其内容可用 |
+| `tools` | 13 个实际工具名、描述、读写属性与 JSON schema；不打开数据库 |
+| `list` | 默认一页；`--limit 1–50`、`--cursor`、`--include-archived true\|false` |
+| `list --all` | 从第一页遍历，检查数量、重复与游标推进；成功含 `complete:true/pages`，不得与 `--cursor` 同用 |
+| `search --query <文字>` 或 `search --tag <标签>` | 与 MCP 搜索共用范围与分页，可加 `--all` |
+| `read <UUID>` | 完整内容、附件索引、布局与当前版本 |
+| `call <工具名>` | 接受 `--json <JSON>`、`--json-file <文件>` 或 `--json-file -`（stdin），未指定时为 `{}`；实际参数按上文工具 schema 校验 |
+
+stdout 仅有一个 JSON 结果。成功为 `{ok:true,...工具结果}`，失败为 `{ok:false,code,message}` 且退出码为 1。输入、未知命令和未知工具在打开数据库前拒绝；JSON 最大 32 MiB。SQLite 提示走 stderr，不混入结果。
+
+`list --all` 检查每页的总数量、记录标识、继续游标与最后计数；资料范围变化导致无法证明完整时返回 `conflict`，不输出部分结果作为全量成功。普通分页和业务记录更新仍遵循原有工具合同。
+
+CLI 是本地文件访问入口，没有网页登录、远程 URL 或 OAuth 选项。数据操作可初始化尚不存在的目录；操作前用 `status` 确认目标。新建、编辑、标签与附件调用继续要求调用者提供稳定请求键，CLI 不自动替换它，也不自动绕过版本冲突。
+
+## 可安装技能
+
+[skills/lingbranch/SKILL.md](../skills/lingbranch/SKILL.md)提供资料操作和部署的路由，优先使用已连接 MCP，再使用 CLI。技能助手依赖本机已安装的 LingBranch 项目，配置 `LINGBRANCH_PROJECT_DIR` 与 `LINGBRANCH_DATA_DIR` 为用户自己的绝对路径。
+
+`npm run --silent skill:install` 默认复制到 `~/.agents/skills/lingbranch`；也接受一个末级名为 `lingbranch` 的绝对目标技能目录，保证目录与 frontmatter 的 name 一致。复制正文、CLI 参考、助手脚本与许可证共 4 个普通文件，不建立软链接。任何已存在的目标，包括空目录或软链接，均拒绝覆盖。
+
+安装只复制技能文件，不修改 MCP/AI 客户端配置或模型账号，不创建凭据，也不表示客户端已加载该技能。通过其实际加载流程接入，并在操作前核对同一资料目录。搬移后的使用规则见 [CLI 参考](../skills/lingbranch/references/cli.md)。

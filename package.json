@@ -15,7 +15,9 @@
     "restore": "node --env-file-if-exists=.env server/backup.mjs restore",
     "test": "node --test tests/*.test.mjs",
     "check": "npm run build && npm test",
-    "licenses": "node scripts/licenses.mjs"
+    "licenses": "node scripts/licenses.mjs",
+    "cli": "node --env-file-if-exists=.env cli/lingbranch.mjs",
+    "skill:install": "node scripts/install-skill.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.32.0",
@@ -48,5 +50,8 @@
   "homepage": "https://github.com/ssdiwu/lingbranch",
   "bugs": {
     "url": "https://github.com/ssdiwu/lingbranch/issues"
+  },
+  "bin": {
+    "lingbranch": "cli/lingbranch.mjs"
   }
 }

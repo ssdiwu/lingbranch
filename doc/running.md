@@ -2,7 +2,7 @@
 
 ## 数据位置
 
-默认目录为项目根的 `data/`。程序按源码位置定位项目，MCP 从别的工作目录启动也不会另建一份库。推荐网页和 MCP 都明确配置同一 `LINGBRANCH_DATA_DIR` 绝对路径。
+默认目录为项目根的 `data/`。程序按源码位置定位项目，MCP/CLI 从别的工作目录启动也不会另建一份库。推荐网页、MCP 和 CLI 都明确配置同一 `LINGBRANCH_DATA_DIR` 绝对路径。
 
 目录包含 `library.sqlite`、WAL/SHM 文件、`attachments/` 原件和可能残留的无引用上传文件。不要单独复制在线 SQLite 主文件，不要放在会清空的容器临时层、静态网站目录或代码发布包中。
 
@@ -10,7 +10,7 @@
 
 按 [README](../README.md) 安装、构建和启动。开发使用 `npm run dev`，Vite 和 API 复用同一本机端口。
 
-`.env` 由 npm 脚本加载，已有环境变量优先；临时指定数据目录后，也要同步 AI 客户端配置。`.env`、令牌和导出包不要进入 Git。
+网页、MCP、CLI 的 npm 脚本加载 `.env`，已有环境变量优先；直接使用 Node.js 运行 MCP/CLI 时显式配置数据目录或 `--env-file`。临时指定数据目录后，也要同步 AI 客户端配置。`.env`、令牌和导出包不要进入 Git。
 
 ## 自有服务器运行合同
 
@@ -41,6 +41,6 @@ LINGBRANCH_TOKEN=replace-with-a-random-secret-of-at-least-32-characters
 
 ## AI 与备份
 
-stdio MCP 可与网页同时访问本机磁盘上的库。不要通过网络文件共享并发打开 SQLite，也不要把本地示例指向另一台电脑的同名目录并声称已共享数据。
+stdio MCP、CLI 可与网页同时访问本机磁盘上的库。CLI 的 `status` 只检查路径，`tools` 返回与 MCP 相同的参数 schema；使用说明见 [接口合同](interfaces.md#本地-cli)。技能安装与运行入口见 [README](../README.md#安装-skill)。不要通过网络文件共享并发打开 SQLite，也不要把本地示例指向另一台电脑的同名目录并声称已共享数据。
 
 服务器自动化使用 [受保护 HTTP 接口](interfaces.md)，首版不提供远程 MCP。完整资料包解压后上限 128 MiB，含个人原件；恢复始终写入新目录。命令见 [README](../README.md)。

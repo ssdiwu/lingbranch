@@ -6,8 +6,10 @@ LingBranch 一人一库。网页与本地 AI 进程共用 SQLite 和附件目录
 flowchart LR
   W[网页 React] --> H[HTTP 入口与访问保护]
   A[用户自己的 AI 客户端] --> M[MCP stdio 进程]
+  A --> C[本地 JSON CLI]
   H --> T[共用工具操作]
   M --> T
+  C --> T
   H --> L[资料库操作与事务]
   T --> L
   L --> S[SQLite]
@@ -22,8 +24,10 @@ flowchart LR
 | 网页 | [atlas.tsx](../web/app/atlas.tsx)、[globals.css](../web/app/globals.css) | 从固定原型复用画布与交互；Vite 输出静态资源，不保留 Sites/Next 部署层 |
 | HTTP | [http.mjs](../server/http.mjs) | Node.js 原生 HTTP，同时提供网页和资料库入口 |
 | 数据库 | [library.mjs](../server/library.mjs) | 内置 `node:sqlite`，避免另装数据库服务或原生驱动 |
-| 共用规则 | [validation.mjs](../server/validation.mjs)、[tools.mjs](../server/tools.mjs) | HTTP 与 MCP 共用校验、事务及业务操作 |
+| 共用规则 | [validation.mjs](../server/validation.mjs)、[tools.mjs](../server/tools.mjs) | HTTP、MCP 与 CLI 共用校验、事务及业务操作 |
 | MCP | [mcp.mjs](../server/mcp.mjs) | 官方 SDK stdio 传输；stdout 仅协议消息，诊断走 stderr |
+| CLI | [lingbranch.mjs](../cli/lingbranch.mjs) | 本地 JSON 工具入口，工具 schema 发现与完整分页；复用同一分发层 |
+| 技能 | [SKILL.md](../skills/lingbranch/SKILL.md)、[安装器](../scripts/install-skill.mjs) | 4 个普通文件，助手通过显式路径启动 CLI，安装拒绝覆盖已有目标 |
 | 资料包 | [bundle.mjs](../server/bundle.mjs) | 带整体与原件摘要的版本化 JSON gzip；先校验再写入新目录 |
 
 `node:sqlite` 在已验证 Node.js 22.22.3 中仍属实验性 API。当前是一人使用的同步数据库操作，不提供大库性能承诺；检索与全量画布没有建立全文索引或分页画布渲染。后续规模问题需实际测量，不提前加入数据库抽象框架。[Node.js SQLite 文档](https://nodejs.org/download/release/v22.22.3/docs/api/sqlite.html)
@@ -31,7 +35,7 @@ flowchart LR
 ## 数据与一致性
 
 - `ideas` 保存正文、来源、标签、位置、归档和单调递增版本时间；`attachments` 保存不可变原件元数据；`connections` 用无序记录对唯一约束查重；`canvas` 保存视野；`receipts` 保存请求摘要与原始结果。
-- SQLite 开启 WAL、外键、FULL 同步和 5 秒锁等待。写入使用 `BEGIN IMMEDIATE`，网页和 MCP 不能同时领取同一空位或覆盖旧版本。全量读取与导出元数据使用一致的只读事务。
+- SQLite 开启 WAL、外键、FULL 同步和 5 秒锁等待。写入使用 `BEGIN IMMEDIATE`，网页、MCP 和 CLI 不能同时领取同一空位或覆盖旧版本。全量读取与导出元数据使用一致的只读事务。
 - 重试先检查凭据，同键不同参数拒绝。新请求修改时先比较 `expectedUpdatedAt`，再判断无变化；不把过期同值草稿报成成功。附件独立于正文版本。
 - 新卡片复用原型 324 × 420 安放间距，涵盖 300px 卡片、图片和三个预览标签；不自动重排旧位置，用户主动拖动允许自定位置。真实 DOM 边界另做浏览器验证。
 - 分页使用创建序号和首次读取上界；期间新增留到下次遍历。遍历中修改筛选字段时仍按当前筛选判定，不是跨请求的历史快照。
@@ -44,7 +48,7 @@ flowchart LR
 
 登录会话签名有效 12 小时，HttpOnly、SameSite=Strict，HTTPS 下附 Secure；令牌轮换使旧签名失效。TLS 由部署者的代理终止并转发原 Host，应用不信任转发的用户身份。配置见 [运行说明](running.md)。
 
-MCP 权限来自运行进程的操作系统用户，只应在用户控制的客户端中启动。协议参考 [官方 MCP 文档](https://modelcontextprotocol.io/docs/develop/build-server)，具体工具见 [接口说明](interfaces.md)。
+MCP 与 CLI 权限来自运行进程的操作系统用户，只应在用户控制的客户端中启动；不通过网络用户身份选择另一份资料库。CLI 参数、JSON 文件和 stdin 校验后才打开数据库。协议参考 [官方 MCP 文档](https://modelcontextprotocol.io/docs/develop/build-server)，具体工具见 [接口说明](interfaces.md)。
 
 ## 备份与验证
 

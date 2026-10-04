@@ -14,7 +14,7 @@ LingBranch 源于维护者正在使用的私有灵感库原型。已确认延续
 
 `npm run licenses` 从锁文件生成 [依赖许可清单](dependency-licenses.json)，从安装包生成 [第三方声明](../vendor/THIRD-PARTY-NOTICES.txt)。锁文件包含未在本机安装的跨平台可选依赖，它们的许可声明保留在清单中；在目标平台重新安装或制作发布包时，应重新生成其实际声明。
 
-复用的 shadcn UI 组件与样式保留 [MIT 许可](../vendor/shadcn-tailwind-4.13.0.LICENSE.md)，组件许可依据见 [shadcn 官方许可](https://github.com/shadcn-ui/ui/blob/main/LICENSE.md)。当前清单含 MIT、ISC、BSD、Apache、0BSD 以及构建依赖 Lightning CSS 的 MPL-2.0；未修改其源码。此处记录依赖声明，不替维护者选择本项目许可证，也不代表对最终分发包的法律审查已经完成。
+复用的 shadcn UI 组件与样式保留 [MIT 许可](../vendor/shadcn-tailwind-4.13.0.LICENSE.md)，组件许可依据见 [shadcn 官方许可](https://github.com/shadcn-ui/ui/blob/main/LICENSE.md)。当前清单含 MIT、ISC、BSD、Apache、0BSD 以及构建依赖 Lightning CSS 的 MPL-2.0；未修改其源码。依赖声明保留原作者及其适用条款，本项目许可证不替换第三方许可证。
 
 源码迁入、安装、构建、测试、网页验收与发布分别成立，证据见 [验证记录](verification.md)。
 
@@ -28,11 +28,11 @@ LingBranch 源于维护者正在使用的私有灵感库原型。已确认延续
 
 ## 公开发布的前提
 
-本项目尚未选择许可证，也未创建公开仓库或发布版本。以下事项是公开发布的前提，初始协作、规格整理和隔离验证可先开展：
+维护者于 2026-10-04 确认项目采用 [MIT License](../LICENSE)，并授权在 GitHub 创建公共源码仓库及推送。公开交付遵循以下检查；未来版本标签、发行包和部署按各自范围另行授权：
 
 1. 由维护者确定项目许可证，并核实拟发布源码与第三方依赖、模板、资源的分发依据。
 2. 检查实际仓库与发布包，确认不包含私人数据、凭据、真实实例配置或未经允许分发的材料；排除规则不能替代内容检查。
 3. 提供可验证的安装、启动、持久化、备份或恢复、AI 接入和部署说明，明确已支持与未验证的环境。
 4. 取得创建远端、推送、公开发布或部署的对应授权，按授权动作完成并保留结果证据。
 
-当前根目录不放置未经确认的许可证，也不把“计划开源”描述为已有分发授权。返回 [项目入口](../README.md) 或 [长期说明导航](README.md)。
+根目录的 LICENSE 由维护者本次确认建立，第三方许可声明继续保留。GitHub 源码公开、版本发行和线上部署分别核验。返回 [项目入口](../README.md) 或 [长期说明导航](README.md)。

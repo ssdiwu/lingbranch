@@ -83,6 +83,7 @@ npm run licenses
 | 共用体验 | [DESIGN.md](DESIGN.md) |
 | 产品行为与验收 | [spec/local-first-library.md](spec/local-first-library.md) |
 | 行为变化与交付记录 | [CHANGELOG.md](CHANGELOG.md) |
+| 项目许可证 | [MIT License](LICENSE) |
 | 当前架构与一致性 | [doc/architecture.md](doc/architecture.md) |
 | 原型与第三方来源 | [doc/source-boundaries.md](doc/source-boundaries.md) |
 | 工程说明导航 | [doc/README.md](doc/README.md) |
@@ -99,4 +100,4 @@ npm run licenses
 | `spec/`、`doc/` | 当前行为规格与工程依据 |
 | `data/`、`dist/`、`node_modules/` | 本地数据、构建和依赖，不进入 Git |
 
-源码仓库为 [ssdiwu/lingbranch](https://github.com/ssdiwu/lingbranch)。当前版本字段为工程版本，尚未创建版本标签或 GitHub Release，也未部署线上实例。`private: true` 保留用于避免误发布 npm；项目许可证在公开前由维护者确定。
+源码仓库为 [ssdiwu/lingbranch](https://github.com/ssdiwu/lingbranch)，项目采用 [MIT License](LICENSE)，第三方材料保留各自许可与声明。当前版本字段为工程版本，尚未创建版本标签或 GitHub Release，也未部署线上实例。`private: true` 保留用于避免误发布 npm。

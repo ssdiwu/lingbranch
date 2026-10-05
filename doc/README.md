@@ -5,6 +5,7 @@
 | 问题 | 入口 |
 | --- | --- |
 | 独立版怎样共享资料库、保证保存与恢复 | [运行架构](architecture.md) |
+| 图文如何共用正文、分阶段保存、升级与兼容 | [图文架构](architecture.md#图文正文的共享语义与保存)、[正文接口](interfaces.md#正文格式与图片引用) |
 | 本机及服务器怎样配置 | [运行说明](running.md) |
 | MCP、CLI、HTTP、技能与重试/冲突参数 | [接口合同](interfaces.md) |
 | 如何让自己的 AI 使用灵感库 | [README 接入导航](../README.md#让自己的-ai-帮忙)、[技能正文](../skills/lingbranch/SKILL.md) |

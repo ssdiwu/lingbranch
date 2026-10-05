@@ -20,15 +20,20 @@
     "skill:install": "node scripts/install-skill.mjs"
   },
   "dependencies": {
+    "@milkdown/crepe": "7.22.2",
+    "@milkdown/kit": "7.22.2",
     "@modelcontextprotocol/sdk": "1.32.0",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
     "embla-carousel-react": "8.6.0",
     "lucide-react": "1.31.0",
+    "mdast-util-from-markdown": "2.1.0",
+    "mdast-util-to-markdown": "2.1.2",
     "radix-ui": "1.6.7",
     "react": "19.2.6",
     "react-dom": "19.2.6",
     "tailwind-merge": "3.6.0",
+    "unist-util-visit": "5.0.0",
     "zod": "3.25.76",
     "zod-to-json-schema": "3.25.1"
   },

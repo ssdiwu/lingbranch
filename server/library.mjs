@@ -5,6 +5,7 @@ import { open, readFile, rename, unlink, lstat } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { z } from 'zod';
 import * as v from './validation.mjs';
+import * as md from './markdown.mjs';
 
 const epoch = '1970-01-01T00:00:00.000Z';
 const nextDate = previous => new Date(Math.max(Date.now(), Date.parse(previous || epoch) + 1)).toISOString();
@@ -30,7 +31,7 @@ export class Library {
     this.db = new DatabaseSync(join(this.directory, 'library.sqlite'), {timeout:5000});
     this.db.exec('PRAGMA foreign_keys=ON; PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL;');
     const version = this.db.prepare('PRAGMA user_version').get().user_version;
-    if (version > 1) { this.db.close(); throw new Error('资料库版本较新，请使用匹配的 LingBranch 版本。'); }
+    if (version > 2) { this.db.close(); throw new Error('资料库版本较新，请使用匹配的 LingBranch 版本。'); }
     if (version === 0) this.transaction(() => {
       this.db.exec(`
         CREATE TABLE IF NOT EXISTS ideas (
@@ -58,6 +59,10 @@ export class Library {
         CREATE TABLE IF NOT EXISTS receipts (key TEXT PRIMARY KEY, hash TEXT NOT NULL, result TEXT NOT NULL);
         PRAGMA user_version=1;
       `);
+    });
+    // v1 → v2：只新增可选格式列。旧正文逐字保留，不重新解释其中的 Markdown 符号。
+    if (version < 2) this.transaction(() => {
+      this.db.exec("ALTER TABLE ideas ADD COLUMN body_format TEXT NOT NULL DEFAULT 'plain' CHECK(body_format IN ('plain','markdown')); PRAGMA user_version=2;");
     });
   }
   close() { this.db.close(); }
@@ -88,10 +93,20 @@ export class Library {
       indexedText:row.indexed_text, sha256:row.sha256, createdAt:row.created_at};
   }
   ideaFrom(row) {
-    return {id:row.id, title:row.title, body:row.body, sourceLabel:row.source_label, sourceUrl:row.source_url,
+    const attachments = this.db.prepare('SELECT * FROM attachments WHERE idea_id=? ORDER BY created_at,id').all(row.id).map(file => this.attachmentFrom(file));
+    const bodyFormat = md.normalizeFormat(row.body_format);
+    return {id:row.id, title:row.title, body:row.body, bodyFormat,
+      summary:md.readableSummary(row.body, bodyFormat),
+      bodyImages:bodyFormat === 'markdown' ? md.resolveBodyImages(row.body, attachments) : [],
+      sourceLabel:row.source_label, sourceUrl:row.source_url,
       sourceAt:row.source_at, tags:JSON.parse(row.tags_json), x:row.x, y:row.y, archived:!!row.archived,
-      createdAt:row.created_at, updatedAt:row.updated_at,
-      attachments:this.db.prepare('SELECT * FROM attachments WHERE idea_id=? ORDER BY created_at,id').all(row.id).map(file => this.attachmentFrom(file))};
+      createdAt:row.created_at, updatedAt:row.updated_at, attachments};
+  }
+  // 正文中的永久引用必须在原件已保存、已索引之后提交。
+  assertBodyReferences(id, body, bodyFormat) {
+    if (bodyFormat !== 'markdown') return [];
+    const attachments = this.db.prepare('SELECT * FROM attachments WHERE idea_id=?').all(id).map(file => this.attachmentFrom(file));
+    return md.resolveBodyImages(body, attachments);
   }
   readIdea(value) {
     const id = v.parse(v.id, value);
@@ -115,8 +130,10 @@ export class Library {
     return this.mutate('create', input, () => {
       const position = freePosition(input, this.db.prepare('SELECT x,y FROM ideas').all());
       const id = randomUUID(), now = nextDate();
-      this.db.prepare(`INSERT INTO ideas(id,title,body,source_label,source_url,source_at,tags_json,x,y,archived,created_at,updated_at)
-        VALUES(?,?,?,?,?,?,?,?,?,0,?,?)`).run(id,input.title,input.body,input.sourceLabel,input.sourceUrl,input.sourceAt,JSON.stringify(input.tags),position.x,position.y,now,now);
+      const bodyFormat = md.normalizeFormat(input.bodyFormat);
+      this.assertBodyReferences(id, input.body, bodyFormat);
+      this.db.prepare(`INSERT INTO ideas(id,title,body,body_format,source_label,source_url,source_at,tags_json,x,y,archived,created_at,updated_at)
+        VALUES(?,?,?,?,?,?,?,?,?,?,0,?,?)`).run(id,input.title,input.body,bodyFormat,input.sourceLabel,input.sourceUrl,input.sourceAt,JSON.stringify(input.tags),position.x,position.y,now,now);
       return {outcome:'created', item:this.readIdea(id)};
     });
   }
@@ -129,8 +146,10 @@ export class Library {
       const changed = Object.entries(input.patch).some(([key, value]) => v.fingerprint(value) !== v.fingerprint(current[key]));
       if (!changed) return {outcome:'unchanged', item:current};
       const next = {...current, ...input.patch};
-      this.db.prepare(`UPDATE ideas SET title=?,body=?,source_label=?,source_url=?,source_at=?,tags_json=?,x=?,y=?,archived=?,updated_at=? WHERE id=?`)
-        .run(next.title,next.body,next.sourceLabel,next.sourceUrl,next.sourceAt,JSON.stringify(next.tags),next.x,next.y,Number(next.archived),nextDate(current.updatedAt),input.id);
+      const bodyFormat = md.normalizeFormat(next.bodyFormat);
+      this.assertBodyReferences(input.id, next.body, bodyFormat);
+      this.db.prepare(`UPDATE ideas SET title=?,body=?,body_format=?,source_label=?,source_url=?,source_at=?,tags_json=?,x=?,y=?,archived=?,updated_at=? WHERE id=?`)
+        .run(next.title,next.body,bodyFormat,next.sourceLabel,next.sourceUrl,next.sourceAt,JSON.stringify(next.tags),next.x,next.y,Number(next.archived),nextDate(current.updatedAt),input.id);
       return {outcome:'updated', item:this.readIdea(input.id)};
     });
   }
@@ -154,7 +173,9 @@ export class Library {
         if (input.tag && !tags.includes(input.tag)) return false;
         if (!terms.length) return true;
         const files = this.db.prepare('SELECT name,indexed_text FROM attachments WHERE idea_id=?').all(row.id);
-        const text = [row.title,row.body,row.source_label,row.source_url,...tags,...files.flatMap(f => [f.name,f.indexed_text])].join(' ').toLocaleLowerCase();
+        // 检索口径与网页一致：Markdown 正文按可读文字匹配，不把渲染标记或引用标识当作用户内容。
+        const bodyText = md.readableSummary(row.body, md.normalizeFormat(row.body_format), 1_000_000);
+        const text = [row.title,bodyText,row.source_label,row.source_url,...tags,...files.flatMap(f => [f.name,f.indexed_text])].join(' ').toLocaleLowerCase();
         return terms.every(term => text.includes(term));
       });
       const remaining = rows.filter(row => row.seq > after), selected = remaining.slice(0,input.limit);

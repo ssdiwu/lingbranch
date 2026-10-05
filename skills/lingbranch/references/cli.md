@@ -36,6 +36,26 @@ node <skill-directory>/scripts/lingbranch.mjs call update_inspiration --json-fil
 
 更新请求携带 `id`、刚读回的 `expectedUpdatedAt`、稳定请求键和 `patch`。连接使用 `connect_inspirations` 的 `fromId/toId`，移除连线使用工具返回的 `connectionId`。标签、归档和附件也通过实际工具 schema 调用。
 
+## 图文请求
+
+以上旧新建示例省略 `bodyFormat`，仍为纯文本。明确要图文时指定 `bodyFormat:"markdown"`。先取得记录 ID，调用 `attach_inspiration_file` 保存本机图片原件，再提交正文：
+
+```json
+{
+  "id": "replace-with-the-record-uuid",
+  "expectedUpdatedAt": "replace-with-the-confirmed-version",
+  "idempotencyKey": "replace-with-a-stable-body-write-key",
+  "patch": {
+    "bodyFormat": "markdown",
+    "body": "图片前的说明。\n\n![截图说明](attachment:replace-with-the-owned-image-uuid)\n\n图片后的说明。"
+  }
+}
+```
+
+这些占位值必须从真实回执替换后再调用；它们不是有效 UUID 或版本。仅支持该灵感所属、已保存的 PNG/JPEG/GIF/WebP 图片作为正文引用。文件原件可保存而不置入正文，SVG 等不可预览图片保留原件读取。不要把 blob/data、外链或本机文件路径写入图文来源，不自动下载外部图片。
+
+新记录可以先保存空正文；已有记录不先清空。新建、各个上传、最终正文分别使用稳定键，响应丢失沿原参数重试；最终读回正文、格式、图片顺序和原件摘要。发生版本冲突先核对，不自动换新版本覆盖。旧文本转图文须按字面转义，不能让原图片语法变成真实引用或外部加载。
+
 ## 结果、分页与错误
 
 - stdout 是一个 JSON 结果；成功为 `ok:true`，失败为 `ok:false` 且退出码非零，SQLite 提示走 stderr。

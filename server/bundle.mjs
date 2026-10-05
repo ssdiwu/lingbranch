@@ -4,15 +4,19 @@ import { dirname, basename, join, resolve } from 'node:path';
 import { z } from 'zod';
 import { Library, validateFile } from './library.mjs';
 import * as v from './validation.mjs';
+import * as md from './markdown.mjs';
 
 export const MAX_BUNDLE_BYTES = 128 * 1024 * 1024;
-const ideaRow = z.object({seq:z.number().int().positive(),id:v.id,...{
+// 旧资料包没有 body_format：先按原格式校验通过，再补为 plain，不重新解释旧正文。
+const legacyIdeaRow = z.object({seq:z.number().int().positive(),id:v.id,...{
   title:v.noteFields.title,body:v.noteFields.body,source_label:v.noteFields.sourceLabel,source_url:v.noteFields.sourceUrl,source_at:v.noteFields.sourceAt,
   tags_json:z.string().max(1000),x:v.coordinate,y:v.coordinate,archived:z.union([z.literal(0),z.literal(1)]),created_at:v.date,updated_at:v.date,
 }}).strict();
+const ideaRow = legacyIdeaRow.extend({body_format:v.bodyFormat}).strict();
+const IDEA_COLUMNS = ['seq','id','title','body','body_format','source_label','source_url','source_at','tags_json','x','y','archived','created_at','updated_at'];
 const attachmentRow = z.object({id:v.id,idea_id:v.id,name:v.attachmentInput.shape.name,mime_type:v.attachmentInput.shape.mimeType,bytes:v.attachmentInput.shape.bytes,indexed_text:v.attachmentInput.shape.indexedText,sha256:v.digest,created_at:v.date}).strict();
-const snapshotSchema = z.object({
-  ideas:z.array(ideaRow),attachments:z.array(attachmentRow),
+const snapshotSchema = (rows) => z.object({
+  ideas:z.array(rows),attachments:z.array(attachmentRow),
   connections:z.array(z.object({id:v.id,from_id:v.id,to_id:v.id}).strict()),
   canvas:z.object({id:z.literal(1),pan_x:v.coordinate,pan_y:v.coordinate,zoom:z.number().min(.05).max(2.5),updated_at:v.date}).strict(),
   receipts:z.array(z.object({key:v.key,hash:v.digest,result:z.string()}).strict()),
@@ -29,7 +33,7 @@ export async function exportBundle(library) {
     blobs[metadata.sha256] = bytes.toString('base64');
   }
   const payload = {snapshot,blobs};
-  const bytes = Buffer.from(JSON.stringify({format:'lingbranch',version:1,sha256:v.fingerprint(payload),payload}));
+  const bytes = Buffer.from(JSON.stringify({format:'lingbranch',version:2,sha256:v.fingerprint(payload),payload}));
   if (bytes.length > MAX_BUNDLE_BYTES) v.fail('too_large','资料包超过首版 128 MiB 限制。',413);
   return gzipSync(bytes);
 }
@@ -40,8 +44,9 @@ export function validateBundle(bytes) {
     if (bytes.length > MAX_BUNDLE_BYTES) throw new Error();
     object = JSON.parse(gunzipSync(bytes,{maxOutputLength:MAX_BUNDLE_BYTES}).toString('utf8'));
   } catch { v.fail('invalid_bundle','资料包损坏、格式无效或超过大小限制。'); }
-  const bundle = v.parse(z.object({format:z.literal('lingbranch'),version:z.literal(1),sha256:v.digest,
-    payload:z.object({snapshot:snapshotSchema,blobs:z.record(v.digest,z.string())}).strict()}).strict(),object);
+  const schemaFor = version => z.object({format:z.literal('lingbranch'),version:z.literal(version),sha256:v.digest,
+    payload:z.object({snapshot:snapshotSchema(version === 1 ? legacyIdeaRow : ideaRow),blobs:z.record(v.digest,z.string())}).strict()}).strict();
+  const bundle = v.parse(z.union([schemaFor(1),schemaFor(2)]),object);
   if (v.fingerprint(bundle.payload) !== bundle.sha256) v.fail('integrity_error','资料包整体校验失败。');
   const {snapshot,blobs} = bundle.payload;
   const unique = (rows,key) => new Set(rows.map(row => row[key])).size === rows.length;
@@ -54,6 +59,8 @@ export function validateBundle(bytes) {
     const parsed = v.parse(v.tags,tags);
     if (JSON.stringify(parsed) !== JSON.stringify(tags)) v.fail('invalid_bundle','标签含重复项或未规范化空白。');
     if (row.updated_at < row.created_at) v.fail('invalid_bundle','记录版本时间无效。');
+    if (row.body_format === 'markdown') md.resolveBodyImages(row.body, snapshot.attachments.filter(file => file.idea_id === row.id)
+      .map(file => ({id:file.id,ideaId:file.idea_id,name:file.name,mimeType:file.mime_type,bytes:file.bytes,indexedText:file.indexed_text,sha256:file.sha256,createdAt:file.created_at})));
   }
   for (const row of snapshot.connections) {
     const pair = `${row.from_id}:${row.to_id}`;
@@ -75,6 +82,14 @@ export function validateBundle(bytes) {
     if (!result || typeof result !== 'object' || !['created','updated','unchanged','renamed','removed'].includes(result.outcome) || result.replayed !== false) v.fail('invalid_bundle','重试凭据结果无效。');
     if (result.item && !ids.has(result.item.id)) v.fail('invalid_bundle','重试凭据引用不存在的灵感。');
     if (result.attachment && !snapshot.attachments.some(file => file.id === result.attachment.id)) v.fail('invalid_bundle','重试凭据引用不存在的附件。');
+    if (result.item) {
+      const format=md.normalizeFormat(result.item.bodyFormat);
+      const owned=snapshot.attachments.filter(file=>file.idea_id===result.item.id);
+      if (format==='markdown') md.resolveBodyImages(result.item.body,owned.map(file=>({id:file.id,name:file.name,mimeType:file.mime_type})));
+      if (result.item.attachments?.some(file=>!owned.some(original=>original.id===file.id&&original.sha256===file.sha256))) {
+        v.fail('invalid_bundle','重试凭据包含不属于该灵感的附件。');
+      }
+    }
   }
   return {snapshot,decoded};
 }
@@ -94,9 +109,10 @@ export async function restoreBundle(bytes,destination) {
       for (const [table,rows] of Object.entries(snapshot)) {
         if (table === 'canvas') { library.db.prepare('UPDATE canvas SET pan_x=?,pan_y=?,zoom=?,updated_at=? WHERE id=1').run(rows.pan_x,rows.pan_y,rows.zoom,rows.updated_at); continue; }
         if (!rows.length) continue;
-        const columns = Object.keys(rows[0]);
+        // 旧包补齐新列后再落库；列集合固定，避免同一批数据里列不一致。
+        const columns = table === 'ideas' ? IDEA_COLUMNS : Object.keys(rows[0]);
         const statement = library.db.prepare(`INSERT INTO ${table} (${columns.join(',')}) VALUES (${columns.map(() => '?').join(',')})`);
-        for (const row of rows) statement.run(...columns.map(key => row[key]));
+        for (const row of rows) statement.run(...columns.map(key => (key === 'body_format' ? (row.body_format ?? 'plain') : row[key])));
       }
     });
     if (library.db.prepare('PRAGMA integrity_check').get().integrity_check !== 'ok') v.fail('integrity_error','恢复后的数据库检查失败。');

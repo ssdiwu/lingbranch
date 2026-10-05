@@ -1,4 +1,5 @@
 import type { CanvasState, Connection, Idea } from "@/lib/idea-store";
+import { markdownText } from '../../shared/markdown.mjs';
 
 export type CardSize = { width: number; height: number };
 export type ViewportSize = { width: number; height: number };
@@ -7,7 +8,9 @@ export const defaultCardSize: CardSize = { width: 300, height: 420 };
 
 export function matchesIdea(idea: Idea, query: string): boolean {
   const terms = query.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
-  const text = [idea.title, idea.body, idea.sourceLabel, idea.sourceUrl, ...idea.tags,
+  if(!terms.length)return true;
+  const body=idea.bodyFormat==='markdown'?markdownText(idea.body).replace(/\s+/g,' ').trim():idea.body;
+  const text = [idea.title, body, idea.sourceLabel, idea.sourceUrl, ...idea.tags,
     ...idea.attachments.flatMap(file => [file.name, file.indexedText])].join(" ").toLocaleLowerCase();
   return terms.every(term => text.includes(term));
 }

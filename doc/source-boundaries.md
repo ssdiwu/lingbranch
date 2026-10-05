@@ -8,7 +8,7 @@ LingBranch 源于维护者正在使用的私有灵感库原型。已确认延续
 
 已核对稳定原型提交 `0ce2c80f9b5f5e3eb917316f92a52b3ceaf3db06`，从该提交逐文件提取画布、标签管理、图片查看、布局算法与必要 UI 组件。原始文件路径与 SHA-256 见 [来源清单](source-manifest.json)；算法移植的新增实现见 `server/library.mjs`。未迁入原型配置、身份、OAuth 草稿、凭据、数据、附件、导出包或私人项目标签别名。
 
-依赖已收敛为 React/Vite、必要 UI 依赖与官方 MCP SDK；存储使用 Node.js 内置 SQLite。没有迁入 Sites、Cloudflare、Next、PDF/OCR 运行资源。原型仍由其自己的流程维护，来源工作树不作修改。
+依赖包括 React/Vite、必要 UI、Milkdown Crepe/Kit 7.22.2、Markdown 解析/序列化库与官方 MCP SDK；存储使用 Node.js 内置 SQLite。编辑器使用 Builder 与必要功能子路径，按功能导入样式，未启用代码高亮、公式或 AI 功能；网页构建未包含 CodeMirror 大型语言包和 KaTeX 字体资源。这些包仍可能属于 Crepe 的安装依赖，许可清单据实际锁文件与安装包生成。没有迁入 Sites、Cloudflare、Next、PDF/OCR 运行资源。原型仍由其自己的流程维护，来源工作树不作修改。
 
 ### 第三方清单
 

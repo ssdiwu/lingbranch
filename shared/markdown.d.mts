@@ -1,0 +1,10 @@
+import type { Root, Definition, Image, ImageReference } from 'mdast';
+export const referencePattern: RegExp;
+export function parseMarkdown(body:string):Root;
+export function definitionMap(tree:Root):Map<string,Definition>;
+export function imageNodes(body:string):{node:Image|ImageReference;definition?:Definition;url:string;alt:string}[];
+export function replaceImageSources(body:string,replacements:Map<string,string>):string;
+export function markdownText(body:string):string;
+export function plainToMarkdown(body:string):string;
+export const exactTextHandler:typeof import('mdast-util-to-markdown').defaultHandlers.text;
+export function safeLinkUrl(value:string|undefined|null):string|null;

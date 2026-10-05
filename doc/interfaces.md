@@ -10,8 +10,8 @@
 | --- | --- |
 | `list_inspirations` | `includeArchived` 默认 true、`limit` 1–50、`cursor`；返回 `items/total/count/hasMore/nextCursor` |
 | `search_inspirations` | `query` 或 `tag`，其余分页参数同上 |
-| `read_inspiration` | `id`（UUID）；返回完整字段与附件索引 |
-| `create_inspiration` | `title/idempotencyKey` 必填；正文、来源、标签、位置可选；返回 `outcome/item` |
+| `read_inspiration` | `id`（UUID）；返回正文、`bodyFormat/summary/bodyImages`、完整字段与附件索引 |
+| `create_inspiration` | `title/idempotencyKey` 必填；正文、可选 `bodyFormat`、来源、标签、位置；返回 `outcome/item` |
 | `update_inspiration` | `id/expectedUpdatedAt/idempotencyKey/patch`；只改指定字段，`archived` 用于归档恢复 |
 | `list_inspiration_tags` | `includeArchived` 默认 true；返回总数、活跃和归档计数 |
 | `rename_inspiration_tag` | `fromTag/toTag/idempotencyKey`；同名合并 |
@@ -29,6 +29,22 @@ MCP 接收上限为 32 MiB，覆盖 20 MiB 文件的 Base64 开销。读取沿 `
 重试保留同一个 8–100 字符的 `idempotencyKey`（字母、数字、下划线和短横线）及相同参数。`replayed:true` 表示返回此前操作的凭据，`item` 可能是当时的版本；需要当前状态时再次读取。不同请求不能复用同一个标识。
 
 冲突返回 `isError:true`，内容含 `code: conflict`。先读取当前版本，与草稿核对，再按用户意图提交新请求；不能自动换新版本号后覆盖。其他错误包括 `invalid_input/not_found/integrity_error/unavailable`。
+
+## 正文格式与图片引用
+
+`bodyFormat` 为可选入参，值为 `plain` 或 `markdown`。旧新建请求省略它时仍保存纯文本；旧更新请求省略它时沿用记录的现有格式。校验不会给旧请求新增默认字段，所以升级前的幂等请求仍按原摘要重放。网页新建默认图文是网页的明确选择。
+
+编辑与共享解析使用 CommonMark。基础排版与显式链接可用；GFM 裸 URL 自动链接、删除线、任务列表和表格未启用。旧纯文本进入图文前按字面转义，保存再载入不应吞入硬换行或增加原本不存在的反斜杠。
+
+末尾换行、制表及边界空格用同一正文中的标准数字字符引用保持，例如真正换行可编码为 `&#10;`。字面 `&#10;` 则先正常转义，不能被误解为换行。共用转换和编辑器文本序列化采用同一规则，读取仍返回正式 Markdown，并可派生原有可读字符；未编辑保存继续使用已读回的正文，不为规范化而改写版本。
+
+所有读取返回正式 `body`、`bodyFormat`、派生 `summary` 与按正文顺序排列的 `bodyImages`。摘要保留可读文字、代码及图片说明；图文排版标记与真实图片内部地址不作为检索文字。派生字段不能作为第二份正文写入。
+
+图文图片写作 `![图片说明](attachment:UUID)`，也可使用引用式图片与定义。UUID 必须是本记录已保存、允许预览的 PNG、JPEG、GIF 或 WebP 原件标识。先取得记录 ID，再调用 `attach_inspiration_file` 保存原件，最后用 `update_inspiration` 提交稳定引用和 `bodyFormat:"markdown"`。新记录第一阶段可以为空正文；已有记录在最终正文写入前保持原内容，不应先清空正文。
+
+外部地址、blob/data、本机路径、不存在或跨记录的图片，以及不支持预览的文件引用被拒绝。代码块与行内代码中的图片语法保留为代码。Markdown 不执行原始 HTML；阅读仅为有效 HTTP、HTTPS、mailto 链接提供点击入口。移除图片展示不删除原件；SVG 等不能预览的图片仍可下载。
+
+每阶段使用独立、稳定的请求键及完整原参数。附件上传不推进正文版本；最终更新仍用开始编辑时确认的版本。回执丢失先沿原请求重试，不能重新创建记录或自动换版本。成功后读取当前记录及原件索引；重试返回的历史凭据本身不证明当前内容。网页保存时冻结快照并暂停编辑，阶段失败保留草稿、原件和请求。
 
 ## HTTP
 

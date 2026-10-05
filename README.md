@@ -196,4 +196,4 @@ npm run licenses
 | `spec/`、`doc/` | 当前行为规格与工程依据 |
 | `data/`、`dist/`、`node_modules/` | 本地数据、构建和依赖，不进入 Git |
 
-源码仓库为 [ssdiwu/lingbranch](https://github.com/ssdiwu/lingbranch)，项目采用 [MIT License](LICENSE)，第三方材料保留各自许可与声明。当前版本字段为工程版本，尚未创建版本标签或 GitHub Release，也未部署线上实例。`private: true` 保留用于避免误发布 npm。
+源码仓库为 [ssdiwu/lingbranch](https://github.com/ssdiwu/lingbranch)，项目采用 [MIT License](LICENSE)，第三方材料保留各自许可与声明。当前源码版本为 **0.0.2**，变化见 [CHANGELOG](CHANGELOG.md)。版本标签、GitHub Release 与真实服务器部署分别核验。`private: true` 保留用于避免误发布 npm。

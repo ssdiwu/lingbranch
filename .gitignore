@@ -16,6 +16,7 @@
 .env
 .env.*
 !.env.example
+/.mcp.json
 *.pem
 *.key
 /.openai/

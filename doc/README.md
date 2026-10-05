@@ -8,6 +8,7 @@
 | 本机及服务器怎样配置 | [运行说明](running.md) |
 | MCP、CLI、HTTP、技能与重试/冲突参数 | [接口合同](interfaces.md) |
 | 如何让自己的 AI 使用灵感库 | [README 接入导航](../README.md#让自己的-ai-帮忙)、[技能正文](../skills/lingbranch/SKILL.md) |
+| MiniMax Code 如何加载工作区 skill 与 MCP，哪些客户端已实测 | [客户端接入说明](ai-clients.md) |
 | 哪些检查通过、哪些尚未验证 | [验证记录](verification.md) |
 | 交付审查发现什么、怎样修复与复验 | [交付审查](review.md) |
 | CLI 与技能接入的审查结果 | [CLI/技能审查](review-cli-skill.md) |

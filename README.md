@@ -16,6 +16,7 @@
 | 让支持 MCP 的 AI 操作灵感库 | [连接 MCP](#连接-mcp) |
 | 让能执行命令的 AI 操作灵感库 | [使用 CLI](#使用-cli) |
 | 给 AI 安装使用说明与助手脚本 | [安装 skill](#安装-skill) |
+| 在 MiniMax Code 中完成接入 | [已验证的客户端步骤](doc/ai-clients.md) |
 | 部署到自己的服务器 | [自有服务器](#自有服务器) |
 
 参与开发的 AI 先读 [AGENTS.md](AGENTS.md)。已有资料库先确认位置，部署和更新时保留数据目录。
@@ -35,6 +36,8 @@ npm start
 打开 <http://127.0.0.1:4280>，首次运行得到空资料库。默认数据在本项目的 `data/` 下，与启动命令的工作目录无关。停止后重新启动，内容、附件、连线和布局保持。
 
 需要更改配置时，将 [.env.example](.env.example) 复制为自己的 `.env`：用 `LINGBRANCH_DATA_DIR` 指定绝对数据路径、`LINGBRANCH_PORT` 修改端口。网页、MCP 和 CLI 使用**同一绝对数据目录**。不要删除 `data/` 或将其提交到 Git。
+
+不需要自定义数据位置时，保留模板中 `LINGBRANCH_DATA_DIR` 的注释，继续使用项目 `data/`。启用该行时，把 `/absolute/path/to/library` 替换为自己的真实目录；这个占位值本身是有效的绝对路径，程序不会把它识别为未完成配置。
 
 `npm run dev` 启动仅监听回环地址的开发模式；日常使用与部署使用构建后的入口。原件、持久化和运行环境限制见 [运行说明](doc/running.md)。
 
@@ -58,6 +61,10 @@ npm start
 
 客户端各有自己的配置位置和加载方式，按它的说明添加并重新加载工具。这里直接运行 `node`，避免 npm 的脚本提示混入协议标准输出。直接启动 MCP 不自动加载项目 `.env`，因此数据目录显式配置在 `env` 中。
 
+应把配置交给客户端实际的 MCP 加载入口；仅保存一个示例 JSON 文件不等于已经连接。以该客户端发现的工具及实际调用回执核验，独立脚本握手只能证明 MCP 服务本身可用。
+
+MiniMax Code 3.1.1 已验证工作区 `.mcp.json` 与新会话加载，具体位置和 skill 安装见 [客户端接入说明](doc/ai-clients.md)。该文件包含本机配置，不应提交；本仓库已忽略仓库根的 `.mcp.json`。工作区位于仓库之外时，需要在所属 Git 项目中另行忽略。
+
 接入后让 AI 发现工具，应看到 **13 个工具**，再调用 `list_inspirations` 并沿 `nextCursor` 读到完成；如果库为空，应明确返回空结果。按用户要求保存或修改后，再用 `read_inspiration` 读回，网页刷新能看到同一结果。
 
 MCP 使用本机文件权限，不要求网页登录或 OAuth，也不配置模型。它不会因为网页已部署到远程服务器而自动获得那台服务器的文件访问能力。工具参数、重试与冲突合同见 [接口说明](doc/interfaces.md)。
@@ -74,6 +81,8 @@ npm run --silent cli -- search --query "公园" --all
 ```
 
 CLI 返回 JSON；成功为 `ok:true`，失败为 `ok:false` 且退出码非零。`status` 不打开或创建数据库，只显示目标目录和数据库文件是否存在；资料操作在目标不存在时初始化空库。`tools` 返回实际工具名与 JSON 参数 schema。
+
+解析结果时分开 stdout 与 stderr，不要先用 `2>&1` 合并再按 JSON 解析；Node.js 的 SQLite 提示可能混入结果。例如：`npm run --silent cli -- list --all > result.json 2> cli.log`。
 
 从任意工作目录启动可直接用绝对路径，也可以用 `--data-dir` 覆盖数据目录：
 
@@ -117,12 +126,14 @@ node "$HOME/.agents/skills/lingbranch/scripts/lingbranch.mjs" status
 
 `LINGBRANCH_PROJECT_DIR` 指向已安装依赖的仓库；`LINGBRANCH_DATA_DIR` 与网页/MCP 一致。若客户端每次启动新 shell，每次调用都传入这些配置。助手脚本依赖本机的 LingBranch 项目，不包含整个应用；安装 skill 也不会自动配置 MCP 或更改模型账号。
 
+助手脚本直接运行时不自动读取项目 `.env`。若其运行进程没有设置 `LINGBRANCH_DATA_DIR`，当前实现会使用项目 `data/`，而非网页 `.env` 中的自定义目录；先核对 `status.dataDir`，再执行资料操作，不能只看 `ok:true` 就认定连接到了预期资料库。
+
 ## 已建立的使用入口
 
 - 网页：新增和编辑灵感，来源与标签，画布拖动与键盘移动，检索，分页全量列表，临时筛选布局，连线，归档恢复，图片查看与附件下载。
 - 保存：稳定请求标识防重复，更新检查版本；冲突保留草稿，核对最新内容后继续。顶部刷新按钮读取 AI 的最新修改。
 - 附件：保存完整原件，最多 20 MiB；校验字节数、SHA-256 和已知格式签名。UTF-8 文本可索引，也可手填关键文字；不提供图片 OCR 或 PDF 全文识别。
-- AI：本地 MCP 和 CLI 共用工具分发与操作规则。MCP 已用官方 TypeScript SDK 客户端验证；具体桌面客户端仍需按其配置方式接入。
+- AI：本地 MCP 和 CLI 共用工具分发与操作规则。MCP 已用官方 TypeScript SDK 客户端验证，并在 MiniMax Code 3.1.1 完成原生工具发现、检索、更新和读回；已验证客户端的配置见 [接入说明](doc/ai-clients.md)。
 - 备份：网页「导出全部资料」或命令行导出完整资料包，包含附件原件、关系、布局及重试凭据；恢复只写入新目录。
 
 产品要求以 [首条使用路径规格](spec/local-first-library.md) 为准，验证事实与限制见 [验证记录](doc/verification.md)。这些入口不代表所有平台或 AI 客户端已适配。

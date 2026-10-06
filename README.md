@@ -175,7 +175,8 @@ npm run licenses
 | 协作与保护边界 | [AGENTS.md](AGENTS.md) |
 | 当前续办、未完成与下一动作 | [PROGRESS.md](PROGRESS.md) |
 | 共同功能交付与运行差异 | [两版边界](doc/editions.md) |
-| 已完成的版本交付 | [0.0.2 交付记录](doc/release-0.0.2.md) |
+| 本轮本地与渠道状态 | [0.0.3 记录](doc/release-0.0.3.md) |
+| 已公开发行的版本 | [0.0.2 交付记录](doc/release-0.0.2.md) |
 | 领域词义 | [GLOSSARY.md](GLOSSARY.md) |
 | 共用体验 | [DESIGN.md](DESIGN.md) |
 | 产品行为与验收 | [spec/local-first-library.md](spec/local-first-library.md) |
@@ -200,4 +201,4 @@ npm run licenses
 | `spec/`、`doc/` | 当前行为规格与工程依据 |
 | `data/`、`dist/`、`node_modules/` | 本地数据、构建和依赖，不进入 Git |
 
-源码仓库为 [ssdiwu/lingbranch](https://github.com/ssdiwu/lingbranch)，项目采用 [MIT License](LICENSE)，第三方材料保留各自许可与声明。当前源码版本为 **0.0.2**，变化见 [CHANGELOG](CHANGELOG.md)。版本标签、GitHub Release 与真实服务器部署分别核验。`private: true` 保留用于避免误发布 npm。
+源码仓库为 [ssdiwu/lingbranch](https://github.com/ssdiwu/lingbranch)，项目采用 [MIT License](LICENSE)，第三方材料保留各自许可与声明。当前源码版本为 **0.0.3**（已本地提交，公共渠道仍为 0.0.2），变化见 [CHANGELOG](CHANGELOG.md)。版本标签、GitHub Release 与真实服务器部署分别核验。`private: true` 保留用于避免误发布 npm。

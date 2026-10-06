@@ -1,8 +1,10 @@
 import { z } from 'zod';
 import * as v from './validation.mjs';
+import {layoutSchema} from '../shared/layout-request.mjs';
 
 // Both transports dispatch here; neither accepts a caller-provided library identity.
 export const toolDefinitions = {
+  arrange_inspirations:{description:'按用户授权一次保存一批灵感位置（最多 1000 条），仅改位置和版本。每条携带读回的 expectedUpdatedAt，稳定 idempotencyKey；冲突整批拒绝。回执 previous 是可恢复的原位置及所需版本，恢复仍调用本工具。原请求重试返回凭据，不覆盖后续修改。',schema:layoutSchema,run:(db,args)=>db.arrangeIdeas(args)},
   list_inspirations:{description:'分页读取全部灵感，默认包含归档和未打标签记录。沿 nextCursor 读取到 hasMore=false。',schema:v.list,readOnly:true,run:(db,args) => db.listIdeas(args)},
   search_inspirations:{description:'按文字或标签检索正文、来源、附件名称和索引文字，支持完整分页。',schema:v.list.refine(x => !!(x.query || x.tag),'提供 query 或 tag'),readOnly:true,run:(db,args) => db.listIdeas(args)},
   read_inspiration:{description:'读取灵感完整正文、版本、来源、附件索引及位置。更新前先读取。',schema:z.object({id:v.id}).strict(),readOnly:true,run:(db,args) => db.readIdea(args.id)},

@@ -49,9 +49,9 @@ async function mcp(t,dataDir) {
 test('CLI 发现与 status 不创建库；未知选项、无效 JSON 和路径在写入前拒绝',async t => {
   const f = await fixture(t);
   const help = await command(['help'],f);
-  assert.equal(help.code,0);assert.equal(help.value.toolCount,13);
+  assert.equal(help.code,0);assert.equal(help.value.toolCount,14);
   const tools = await command(['tools'],f);
-  assert.equal(tools.value.tools.length,13);
+  assert.equal(tools.value.tools.length,14);
   assert.ok(tools.value.tools.every(tool => tool.inputSchema.type === 'object'));
   const status = await command(['status'],f);
   assert.equal(status.value.status,'not_initialized');assert.equal(status.value.dataDir,f.dataDir);
@@ -88,7 +88,7 @@ test('CLI 命令软链接和技能指定的项目目录软链接均能启动，�
   const bin = join(f.directory,'lingbranch');
   await symlink(entry,bin);
   const tools = await command(['tools'],{...f,entryPath:bin});
-  assert.equal(tools.code,0);assert.equal(tools.value.tools.length,13);
+  assert.equal(tools.code,0);assert.equal(tools.value.tools.length,14);
   const projectAlias = join(f.directory,'project-alias');
   await symlink(projectRoot,projectAlias);
   const status = await command(['status'],{...f,entryPath:join(projectRoot,'skills/lingbranch/scripts/lingbranch.mjs'),extraEnv:{LINGBRANCH_PROJECT_DIR:projectAlias}});
@@ -109,7 +109,7 @@ test('CLI 写入文件与 stdin、幂等及过期版本，在独立 MCP 中读�
   assert.equal(changedKey.code,1);assert.equal(changedKey.value.code,'conflict');
   const ai = await mcp(t,f.dataDir);
   const discovered = await ai.client.listTools();
-  assert.equal(discovered.tools.length,13);
+  assert.equal(discovered.tools.length,14);
   const original = await ai.call('read_inspiration',{id:first.value.item.id});
   const update = {id:original.id,expectedUpdatedAt:original.updatedAt,patch:{body:'CLI 更新后由 MCP 读回'},idempotencyKey:key()};
   const edited = await call('update_inspiration',update,f);

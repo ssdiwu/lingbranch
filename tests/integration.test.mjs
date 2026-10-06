@@ -58,11 +58,11 @@ test('HTTP 空库 → 两条灵感 → 检索连线 → 独立 stdio MCP 更新 
   assert.equal((await f.request('/api/atlas')).value.ideas.length,0);
   const first=await create(f,'阅读记录',{body:'关于公园的笔记',sourceLabel:'自行编写示例',sourceUrl:'https://example.com/article',sourceAt:'2026-10-04',tags:['阅读']});
   const second=await create(f,'散步想法',{x:120,y:120});
-  assert.ok(Math.abs(first.x-second.x)>=324||Math.abs(first.y-second.y)>=420);
+  assert.ok(Math.abs(first.x-second.x)>=200||Math.abs(first.y-second.y)>=56);
   const found=await f.request('/api/list?query=公园');assert.equal(found.value.items[0].id,first.id);
   const connection=await f.request('/api/connections',{method:'POST',body:{fromId:first.id,toId:second.id}});assert.equal(connection.response.status,200);
   const ai=await mcp(t,f.config.dataDir);
-  const tools=await ai.client.listTools();assert.equal(tools.tools.length,13);assert.ok(tools.tools.every(tool=>tool.inputSchema.type==='object'));
+  const tools=await ai.client.listTools();assert.equal(tools.tools.length,14);assert.ok(tools.tools.every(tool=>tool.inputSchema.type==='object'));
   const read=await ai.call('read_inspiration',{id:first.id});assert.equal(read.body,first.body);
   const changed=await ai.call('update_inspiration',{id:first.id,expectedUpdatedAt:read.updatedAt,patch:{body:'由 MCP 补充的公园观察',tags:['阅读','观察']},idempotencyKey:key()});
   assert.equal(changed.outcome,'updated');assert.equal(changed.isError,false);
@@ -101,7 +101,7 @@ test('跨进程并发新建避开旧位置；重复请求原子去重',async t =
   assert.equal(results[0].item.id,results[1].value.id);
   await Promise.all(Array.from({length:20},(_,i)=>i%2?ai.call('create_inspiration',{title:`并发 ${i}`,x:-200,y:-100,idempotencyKey:key()}):create(f,`并发 ${i}`,{x:-200,y:-100})));
   const ideas=(await f.request('/api/atlas')).value.ideas;assert.equal(ideas.length,22);
-  for(let i=0;i<ideas.length;i++)for(let j=i+1;j<ideas.length;j++)assert.ok(Math.abs(ideas[i].x-ideas[j].x)>=324||Math.abs(ideas[i].y-ideas[j].y)>=420);
+  for(let i=0;i<ideas.length;i++)for(let j=i+1;j<ideas.length;j++)assert.ok(Math.abs(ideas[i].x-ideas[j].x)>=200||Math.abs(ideas[i].y-ideas[j].y)>=56);
   assert.equal(ideas.find(x=>x.id===old.id).x,-200);assert.equal(ideas.find(x=>x.id===old.id).y,-100);
 });
 

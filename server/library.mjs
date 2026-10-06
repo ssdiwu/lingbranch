@@ -6,10 +6,12 @@ import { join, resolve } from 'node:path';
 import { z } from 'zod';
 import * as v from './validation.mjs';
 import * as md from './markdown.mjs';
+import {NODE_SIZE,NODE_GAP} from '../shared/relationship-layout.mjs';
+import {layoutSchema} from '../shared/layout-request.mjs';
 
 const epoch = '1970-01-01T00:00:00.000Z';
 const nextDate = previous => new Date(Math.max(Date.now(), Date.parse(previous || epoch) + 1)).toISOString();
-const cardWidth = 324, cardHeight = 420;
+const cardWidth = NODE_SIZE.width+NODE_GAP.x, cardHeight = NODE_SIZE.height+NODE_GAP.y;
 
 // Ported from the pinned prototype: a new card never moves an existing card.
 function freePosition(preferred, occupied) {
@@ -151,6 +153,27 @@ export class Library {
       this.db.prepare(`UPDATE ideas SET title=?,body=?,body_format=?,source_label=?,source_url=?,source_at=?,tags_json=?,x=?,y=?,archived=?,updated_at=? WHERE id=?`)
         .run(next.title,next.body,bodyFormat,next.sourceLabel,next.sourceUrl,next.sourceAt,JSON.stringify(next.tags),next.x,next.y,Number(next.archived),nextDate(current.updatedAt),input.id);
       return {outcome:'updated', item:this.readIdea(input.id)};
+    });
+  }
+  arrangeIdeas(value) {
+    const input=v.parse(layoutSchema,value);
+    return this.mutate('layout',input,()=>{
+      // Read every version before the first write. The saved receipt is also
+      // the original-position backup; a failed transaction preserves both.
+      const current=input.positions.map(point=>{
+        const row=this.db.prepare('SELECT id,x,y,updated_at FROM ideas WHERE id=?').get(point.id);
+        if(!row)v.fail('not_found','整理中的灵感不存在。',404);
+        if(row.updated_at!==point.expectedUpdatedAt)v.fail('conflict','灵感已被修改，整批位置未保存。请刷新后重新整理。',409);
+        return row;
+      });
+      const positions=input.positions.map((point,index)=>{
+        const row=current[index], changed=row.x!==point.x||row.y!==point.y;
+        const updatedAt=changed?nextDate(row.updated_at):row.updated_at;
+        if(changed)this.db.prepare('UPDATE ideas SET x=?,y=?,updated_at=? WHERE id=?').run(point.x,point.y,updatedAt,point.id);
+        return {id:point.id,x:point.x,y:point.y,updatedAt};
+      });
+      return {outcome:positions.some((point,index)=>point.updatedAt!==current[index].updated_at)?'updated':'unchanged',positions,
+        previous:current.map((row,index)=>({id:row.id,x:row.x,y:row.y,expectedUpdatedAt:positions[index].updatedAt}))};
     });
   }
   listIdeas(value = {}) {

@@ -12,6 +12,7 @@
 | `search_inspirations` | `query` 或 `tag`，其余分页参数同上 |
 | `read_inspiration` | `id`（UUID）；返回正文、`bodyFormat/summary/bodyImages`、完整字段与附件索引 |
 | `create_inspiration` | `title/idempotencyKey` 必填；正文、可选 `bodyFormat`、来源、标签、位置；返回 `outcome/item` |
+| `arrange_inspirations` | `idempotencyKey/positions`；每项 `id/expectedUpdatedAt/x/y`，1–1000 项且 ID 不重复；返回 `outcome/replayed/positions/previous` |
 | `update_inspiration` | `id/expectedUpdatedAt/idempotencyKey/patch`；只改指定字段，`archived` 用于归档恢复 |
 | `list_inspiration_tags` | `includeArchived` 默认 true；返回总数、活跃和归档计数 |
 | `rename_inspiration_tag` | `fromTag/toTag/idempotencyKey`；同名合并 |
@@ -29,6 +30,14 @@ MCP 接收上限为 32 MiB，覆盖 20 MiB 文件的 Base64 开销。读取沿 `
 重试保留同一个 8–100 字符的 `idempotencyKey`（字母、数字、下划线和短横线）及相同参数。`replayed:true` 表示返回此前操作的凭据，`item` 可能是当时的版本；需要当前状态时再次读取。不同请求不能复用同一个标识。
 
 冲突返回 `isError:true`，内容含 `code: conflict`。先读取当前版本，与草稿核对，再按用户意图提交新请求；不能自动换新版本号后覆盖。其他错误包括 `invalid_input/not_found/integrity_error/unavailable`。
+
+## 整批位置与恢复
+
+网页通过 `POST /api/tools` 调用 `arrange_inspirations`，CLI 与 stdio MCP 使用同一分发和 SQLite 事务。位置基于已读回的版本，所有版本先检查，再提交全部坐标和回执；同标识同参数只读回旧凭据，同标识不同参数返回冲突。没有自动推断关系或依赖模型的布局操作。
+
+回执 `positions` 包含新坐标及 `updatedAt`，`previous` 包含原坐标及恢复所需的 `expectedUpdatedAt`。恢复使用新请求键，将原 `previous` 作为 `positions` 调用本工具；不能先替换成最新版本绕过冲突。相同键重试后仍应读取当前记录，不能把历史回执中的坐标当作当前状态。
+
+网页保留本页最近一次实际位置变更的回执（尚无变更时保管当前回执），无变化不替换上次可恢复的位置，提供恢复和下载。下载 JSON 的 `format` 为 `lingbranch-layout`、版本 1；它仅含坐标与版本，不是完整资料备份。跨页面需要调用者保管该回执；完整资料与原件备份继续使用现有导出／隔离恢复入口。恢复失败不改变部分坐标，回执保留在原位置操作的持久凭据中。
 
 ## 正文格式与图片引用
 
@@ -81,7 +90,7 @@ HTTP 错误为 `{code,error}`：输入 400、未认证 401、边界拒绝 403、
 | --- | --- |
 | `help` 或 `--help` | 命令发现、默认资料目录、重试与冲突提示 |
 | `status` | 返回目标目录与 `database_present/not_initialized`；不打开或新建数据库，不证明其内容可用 |
-| `tools` | 13 个实际工具名、描述、读写属性与 JSON schema；不打开数据库 |
+| `tools` | 14 个实际工具名、描述、读写属性与 JSON schema；不打开数据库 |
 | `list` | 默认一页；`--limit 1–50`、`--cursor`、`--include-archived true\|false` |
 | `list --all` | 从第一页遍历，检查数量、重复与游标推进；成功含 `complete:true/pages`，不得与 `--cursor` 同用 |
 | `search --query <文字>` 或 `search --tag <标签>` | 与 MCP 搜索共用范围与分页，可加 `--all` |

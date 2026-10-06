@@ -1,10 +1,11 @@
 import type { CanvasState, Connection, Idea } from "@/lib/idea-store";
 import { markdownText } from '../../shared/markdown.mjs';
+import {NODE_SIZE} from '../../shared/relationship-layout.mjs';
 
 export type CardSize = { width: number; height: number };
 export type ViewportSize = { width: number; height: number };
 export type ViewPositions = Record<string, { x: number; y: number }>;
-export const defaultCardSize: CardSize = { width: 300, height: 420 };
+export const defaultCardSize: CardSize = NODE_SIZE;
 
 export function matchesIdea(idea: Idea, query: string): boolean {
   const terms = query.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
@@ -32,13 +33,6 @@ export function visibleConnections(connections: Connection[], ideas: Idea[]): Co
   const ids = new Set(ideas.map(idea => idea.id));
   return connections.filter(link => ids.has(link.fromId) && ids.has(link.toId));
 }
-export function compactIdeas(ideas: Idea[], viewport: ViewportSize, size: CardSize): Idea[] {
-  if (!ideas.length) return [];
-  const width = size.width + 24, height = size.height + 28;
-  const ratio = Math.max(1, viewport.width - 64) / Math.max(1, viewport.height - 168);
-  const columns = Math.max(1, Math.min(ideas.length, Math.ceil(Math.sqrt(ideas.length * ratio * height / width))));
-  return ideas.map((idea, index) => ({ ...idea, x: index % columns * width, y: Math.floor(index / columns) * height }));
-}
 export function freeViewPosition(preferred: { x: number; y: number }, occupied: { x: number; y: number }[], size: CardSize): { x: number; y: number } {
   const width = size.width + 24, height = size.height + 28;
   const x = Math.max(-900_000, Math.min(900_000, preferred.x)), y = Math.max(-900_000, Math.min(900_000, preferred.y));
@@ -50,7 +44,7 @@ export function freeViewPosition(preferred: { x: number; y: number }, occupied: 
 }
 export function applyViewPositions(ideas: Idea[], positions: ViewPositions, size: CardSize): Idea[] {
   // Leave unmodified cards fixed. Resolve local drags against them, including
-  // changed card measurements after resize; never mutate the persisted ideas.
+  // the node hit area; never mutate the persisted ideas.
   const occupied = ideas.filter(idea => !positions[idea.id]).map(idea => ({ x: idea.x, y: idea.y }));
   return ideas.map(idea => {
     if (!positions[idea.id]) return idea;

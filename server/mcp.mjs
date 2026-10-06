@@ -8,7 +8,7 @@ import { executeTool, toolDefinitions } from './tools.mjs';
 import { LibraryError } from './validation.mjs';
 
 const library = new Library(dataDirectory());
-const server = new Server({name:'lingbranch',version:'0.0.2'}, {capabilities:{tools:{}}});
+const server = new Server({name:'lingbranch',version:'0.0.3'}, {capabilities:{tools:{}}});
 server.setRequestHandler(ListToolsRequestSchema,async() => ({tools:Object.entries(toolDefinitions).map(([name,tool]) => ({
   name, description:tool.description, inputSchema:zodToJsonSchema(tool.schema,{$refStrategy:'none'}),
   annotations:{readOnlyHint:!!tool.readOnly,destructiveHint:name.startsWith('remove_'),idempotentHint:true,openWorldHint:false},

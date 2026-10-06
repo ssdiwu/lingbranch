@@ -19,7 +19,7 @@
 | 在 MiniMax Code 中完成接入 | [已验证的客户端步骤](doc/ai-clients.md) |
 | 部署到自己的服务器 | [自有服务器](#自有服务器) |
 
-参与开发的 AI 先读 [AGENTS.md](AGENTS.md)。已有资料库先确认位置，部署和更新时保留数据目录。
+参与开发的 AI 先读 [AGENTS.md](AGENTS.md)及 [当前进度](PROGRESS.md)。已有资料库先确认位置，部署和更新时保留数据目录。
 
 ## 本机运行
 
@@ -172,6 +172,9 @@ npm run licenses
 | 问题 | 入口 |
 | --- | --- |
 | 协作与保护边界 | [AGENTS.md](AGENTS.md) |
+| 当前续办、未完成与下一动作 | [PROGRESS.md](PROGRESS.md) |
+| 共同功能交付与运行差异 | [两版边界](doc/editions.md) |
+| 已完成的版本交付 | [0.0.2 交付记录](doc/release-0.0.2.md) |
 | 领域词义 | [GLOSSARY.md](GLOSSARY.md) |
 | 共用体验 | [DESIGN.md](DESIGN.md) |
 | 产品行为与验收 | [spec/local-first-library.md](spec/local-first-library.md) |

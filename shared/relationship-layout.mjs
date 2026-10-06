@@ -1,6 +1,7 @@
 // Geometry shared by placement, temporary views and the relationship canvas.
 // Coordinates are the top-left of a node's complete title/hit area.
 export const NODE_SIZE = Object.freeze({width:200, height:56});
+export const NODE_ANCHOR = Object.freeze({x:100, y:40});
 export const NODE_GAP = Object.freeze({x:32, y:40});
 export const PREVIEW_SIZE = Object.freeze({width:300, height:400});
 

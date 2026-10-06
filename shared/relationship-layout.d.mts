@@ -1,5 +1,6 @@
 export type Point = {x:number;y:number};
 export const NODE_SIZE: Readonly<{width:number;height:number}>;
+export const NODE_ANCHOR: Readonly<Point>;
 export const NODE_GAP: Readonly<{x:number;y:number}>;
 export const PREVIEW_SIZE: Readonly<{width:number;height:number}>;
 export function directNeighborhood(id:string|null, connections:{fromId:string;toId:string}[], visibleIds:string[]):Set<string>;

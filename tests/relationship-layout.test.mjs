@@ -26,7 +26,7 @@ test('关系布局稳定、无重叠，直接关联只依据现有无方向连�
   const result=arrangeRelationships(ideas,links);
   assert.deepEqual(result,arrangeRelationships(ideas,links));assert.equal(result.length,ideas.length);
   assert.deepEqual(ideas.map(idea=>idea.x),Array(70).fill(0));
-  for(let i=0;i<result.length;i++)for(let j=i+1;j<result.length;j++)assert.ok(Math.abs(result[i].x-result[j].x)>=200||Math.abs(result[i].y-result[j].y)>=56,`${i}/${j} overlap`);
+  for(let i=0;i<result.length;i++)for(let j=i+1;j<result.length;j++)assert.ok(Math.abs(result[i].x-result[j].x)>=200||Math.abs(result[i].y-result[j].y)>=88,`${i}/${j} overlap`);
   assert.deepEqual([...directNeighborhood('1',links,['0','1','2','16'])].sort(),['0','1','2']);
   assert.deepEqual([...directNeighborhood('16',links,ideas.map(idea=>idea.id))],['16']);
   for(const viewport of [{width:1000,height:700},{width:390,height:736},{width:800,height:450}]){

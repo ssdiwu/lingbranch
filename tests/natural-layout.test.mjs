@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {arrangeRelationships,themeZones,themeLabels,nodeVisualBounds,NODE_SIZE} from '../shared/relationship-layout.mjs';
+import {arrangeRelationships,aggregationBasis,nodeVisualBounds,freeNodePosition,nodesOverlap,NODE_SIZE} from '../shared/relationship-layout.mjs';
 const sample=n=>Array.from({length:n},(_,i)=>({id:`note-${String(i).padStart(4,'0')}`,x:i*300,y:i*90,tags:[`topic-${i%7}`],body:'原文与附件不改变',attachments:[{id:'original'}]}));
 const mean=values=>values.reduce((sum,n)=>sum+n,0)/values.length;
 const distance=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
@@ -18,24 +18,23 @@ test('real connections exert stronger pull while multi-tag and untagged notes re
  const original=sample(35),before=arrangeRelationships(original,[]);const edges=[{fromId:original[0].id,toId:original[3].id}],after=arrangeRelationships(original,edges);
  assert.ok(distance(after[0],after[3])<distance(before[0],before[3])*.75);
  original[0].tags=['topic-0','topic-3'];original[1].tags=[];const copy=structuredClone(original),arranged=arrangeRelationships(original,edges);assert.deepEqual(original,copy);noOverlap(arranged);assert.equal(arranged[0].tags.length,2);assert.equal(arranged[1].tags.length,0);
- const hints=themeZones(arranged);assert.ok(hints.length<=6);assert.ok(hints.every(h=>h.count>=3&&Number.isFinite(h.x)&&Number.isFinite(h.ry)));assert.deepEqual(original,copy);assert.equal(edges.length,1);
+ const basis=aggregationBasis(arranged,edges);assert.equal(basis.connections.length,1);assert.ok(basis.tags.some(t=>t.members.includes(original[0].id)&&t.tag==='topic-3'));assert.equal(basis.untaggedCount,1);assert.deepEqual(original,copy);assert.equal(edges.length,1);
 });
 test('bounded 1000-node layout stays finite and separates full hit areas; oversize rejects before layout',()=>{
  const original=sample(1000),arranged=arrangeRelationships(original,[]);assert.equal(arranged.length,1000);assert.ok(arranged.every(n=>Number.isFinite(n.x)&&Number.isFinite(n.y)&&Math.abs(n.x)<1e6&&Math.abs(n.y)<1e6));noOverlap(arranged);
  assert.throws(()=>arrangeRelationships(sample(1001),[]),/1000/);assert.deepEqual(arrangeRelationships([],[]),[]);
 });
 
-test('35% and 39% visual bounds include selected point, focus and neighboring titles',()=>{
- const tag='WWWWWWWWWWWW',wide=[...Array.from({length:12},(_,i)=>({id:`topic-${i}`,x:400,y:344,tags:[tag]})),{id:'adjacent',title:'W'.repeat(40),x:575,y:244,tags:[]},...Array.from({length:7},(_,i)=>({id:`far-${i}`,x:5000+i*300,y:5000,tags:[]}))],view={panX:0,panY:0,zoom:1};
- // Measured in the actual Inter/PingFang browser font: 173.251px, wider than
- // the former ASCII estimate. The former label at (500,282) hit the neighbor.
- const hint=themeLabels(themeZones(wide),wide,view,{width:1000,height:700})[0];
- assert.ok(hint);if(hint.label){const box={left:hint.label.x-173.251/2,right:hint.label.x+173.251/2,top:hint.label.y-14,bottom:hint.label.y+3};assert.ok(wide.map(n=>nodeVisualBounds(n,view)).every(n=>box.right<=n.left||box.left>=n.right||box.bottom<=n.top||box.top>=n.bottom),'wide Latin caption overlaps a node');}
- const nodes=arrangeRelationships(sample(77),[]);
+test('complete Chinese, Latin, wide and 200-character titles reserve screen bounds at all reading zooms',()=>{
+ const original=sample(77).map((n,i)=>({...n,title:i===0?'灵感完整标题'.repeat(33).slice(0,200):i===1?'W'.repeat(200):i%2?'Readable project title: purpose and context '+i:'方法笔记：完整主体与使用场景 '+i})),copy=structuredClone(original),nodes=arrangeRelationships(original,[]);
+ assert.deepEqual(original,copy);for(let i=0;i<nodes.length;i++)assert.equal(nodes[i].title,original[i].title);
  for(const zoom of [.35,.39,1,2]){
-  const transform={panX:80,panY:40,zoom},boxes=nodes.map(n=>nodeVisualBounds(n,transform));
-  for(let i=0;i<boxes.length;i++)for(let j=0;j<i;j++){const a=boxes[i],b=boxes[j];assert.ok(a.right<=b.left||a.left>=b.right||a.bottom<=b.top||a.top>=b.bottom,`screen collision ${zoom} ${nodes[i].id}/${nodes[j].id}`);}
-  const labels=themeLabels(themeZones(nodes),nodes,transform,{width:1000,height:700});
-  for(const hint of labels){if(!hint.label)continue;const x=hint.label.x*zoom+80,y=hint.label.y*zoom+40;assert.ok(y>=100&&y<=620);const half=Array.from(hint.tag.slice(0,12)+' · '+hint.count).length*13/2;const box={left:x-half,right:x+half,top:y-14,bottom:y+3};assert.ok(boxes.every(n=>box.right<=n.left||box.left>=n.right||box.bottom<=n.top||box.top>=n.bottom),'theme caption overlaps a node');}
+  const boxes=nodes.map(n=>nodeVisualBounds(n,{panX:80,panY:40,zoom}));
+  for(let i=0;i<boxes.length;i++)for(let j=0;j<i;j++){const a=boxes[i],b=boxes[j];assert.ok(a.right<=b.left||a.left>=b.right||a.bottom<=b.top||a.top>=b.bottom,`full title collision ${zoom} ${nodes[i].id}/${nodes[j].id}`);}
  }
+ const candidate=freeNodePosition({...original[0],x:nodes[1].x,y:nodes[1].y},nodes);assert.ok(nodes.every(n=>!nodesOverlap({...original[0],...candidate},n)));assert.deepEqual(original,copy);
+});
+test('aggregation basis reports exact current members, real links and no untagged or outside members',()=>{
+ const notes=[{id:'a',tags:['broad','specific','specific']},{id:'b',tags:['broad']},{id:'c',tags:['specific']},{id:'d',tags:[]}],links=[{fromId:'a',toId:'c'},{fromId:'c',toId:'a'},{fromId:'a',toId:'outside'},{fromId:'a',toId:'a'}],before=structuredClone({notes,links}),basis=aggregationBasis(notes,links);
+ assert.deepEqual(basis.tags.map(t=>[t.tag,t.count,[...t.members].sort()]),[['broad',2,['a','b']],['specific',2,['a','c']]]);assert.equal(basis.connections.length,1);assert.equal(basis.untaggedCount,1);assert.deepEqual({notes,links},before);assert.equal(aggregationBasis([],[]).nodeCount,0);
 });

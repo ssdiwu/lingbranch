@@ -6,24 +6,12 @@ import { join, resolve } from 'node:path';
 import { z } from 'zod';
 import * as v from './validation.mjs';
 import * as md from './markdown.mjs';
-import {NODE_SIZE,NODE_GAP} from '../shared/relationship-layout.mjs';
+import {freeNodePosition} from '../shared/relationship-layout.mjs';
 import {layoutSchema} from '../shared/layout-request.mjs';
 
 const epoch = '1970-01-01T00:00:00.000Z';
 const nextDate = previous => new Date(Math.max(Date.now(), Date.parse(previous || epoch) + 1)).toISOString();
-const cardWidth = NODE_SIZE.width+NODE_GAP.x, cardHeight = NODE_SIZE.height+NODE_GAP.y;
-
-// Ported from the pinned prototype: a new card never moves an existing card.
-function freePosition(preferred, occupied) {
-  const dx = preferred.x > 1_000_000 - 3 * cardWidth ? -1 : 1;
-  const dy = preferred.y > 0 ? -1 : 1;
-  for (let n = 0; n <= occupied.length * 9 + 4; n++) {
-    const point = {x:preferred.x + dx * (n % 4) * cardWidth, y:preferred.y + dy * Math.floor(n / 4) * cardHeight};
-    if (Math.abs(point.x) > 1_000_000 || Math.abs(point.y) > 1_000_000) continue;
-    if (!occupied.some(other => Math.abs(point.x - other.x) < cardWidth && Math.abs(point.y - other.y) < cardHeight)) return point;
-  }
-  v.fail('conflict', '附近没有空位，请选择另一个位置。', 409);
-}
+function freePosition(preferred,occupied){try{return freeNodePosition(preferred,occupied);}catch{v.fail('conflict','附近没有空位，请选择另一个位置。',409);}}
 
 export class Library {
   constructor(directory) {
@@ -130,7 +118,7 @@ export class Library {
   createIdea(value) {
     const input = v.parse(v.create, value);
     return this.mutate('create', input, () => {
-      const position = freePosition(input, this.db.prepare('SELECT x,y FROM ideas').all());
+      const position = freePosition(input, this.db.prepare('SELECT x,y,title FROM ideas').all());
       const id = randomUUID(), now = nextDate();
       const bodyFormat = md.normalizeFormat(input.bodyFormat);
       this.assertBodyReferences(id, input.body, bodyFormat);

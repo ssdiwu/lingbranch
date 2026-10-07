@@ -1,3 +1,4 @@
+import {MIN_CANVAS_ZOOM} from "../shared/relationship-layout.mjs";
 import { gzipSync, gunzipSync } from 'node:zlib';
 import { readFile, mkdir, mkdtemp, rename, rm, rmdir, lstat } from 'node:fs/promises';
 import { dirname, basename, join, resolve } from 'node:path';
@@ -18,7 +19,7 @@ const attachmentRow = z.object({id:v.id,idea_id:v.id,name:v.attachmentInput.shap
 const snapshotSchema = (rows) => z.object({
   ideas:z.array(rows),attachments:z.array(attachmentRow),
   connections:z.array(z.object({id:v.id,from_id:v.id,to_id:v.id}).strict()),
-  canvas:z.object({id:z.literal(1),pan_x:v.coordinate,pan_y:v.coordinate,zoom:z.number().min(.05).max(2.5),updated_at:v.date}).strict(),
+  canvas:z.object({id:z.literal(1),pan_x:v.coordinate,pan_y:v.coordinate,zoom:z.number().min(MIN_CANVAS_ZOOM).max(2.5),updated_at:v.date}).strict(),
   receipts:z.array(z.object({key:v.key,hash:v.digest,result:z.string()}).strict()),
 }).strict();
 

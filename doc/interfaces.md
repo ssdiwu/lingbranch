@@ -70,7 +70,7 @@ MCP 接收上限为 32 MiB，覆盖 20 MiB 文件的 Base64 开销。读取沿 `
 | `GET /api/search?q=...` | 网页兼容检索，最多 50 条；完整遍历使用 `/api/list` |
 | `GET/PATCH/DELETE /api/tags` | 标签查看、合并、移除；变更需 `idempotencyKey` |
 | `POST/DELETE /api/connections` | 建立 `{fromId,toId}`；移除 `{id}` |
-| `PATCH /api/canvas` | `panX/panY/zoom/expectedUpdatedAt/idempotencyKey` |
+| `PATCH /api/canvas` | `panX/panY/zoom/expectedUpdatedAt/idempotencyKey`；zoom 为 0.0000001–2.5，支持长标题全图概览 |
 | `POST /api/ideas/:id/attachments` | multipart：`file/indexedText/sha256/idempotencyKey` |
 | `GET /api/attachments/:id` | 校验后读取原件；安全图片可 inline，其余强制下载；`?download=1` 强制下载 |
 | `GET /api/export` | 完整 gzip 资料包 |

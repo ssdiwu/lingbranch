@@ -1,3 +1,4 @@
+import {MIN_CANVAS_ZOOM} from "../shared/relationship-layout.mjs";
 import { z } from 'zod';
 import { createHash } from 'node:crypto';
 
@@ -44,7 +45,7 @@ export const attachmentInput = z.object({
   bytes:z.number().int().min(1).max(MAX_ATTACHMENT_BYTES), sha256:digest,
   indexedText:z.string().max(100000).default(''), idempotencyKey:key,
 }).strict();
-export const canvas = z.object({panX:coordinate, panY:coordinate, zoom:z.number().min(.05).max(2.5), expectedUpdatedAt:date, idempotencyKey:key}).strict();
+export const canvas = z.object({panX:coordinate, panY:coordinate, zoom:z.number().min(MIN_CANVAS_ZOOM).max(2.5), expectedUpdatedAt:date, idempotencyKey:key}).strict();
 export const rename = z.object({fromTag:tag, toTag:tag, idempotencyKey:key}).strict();
 export const removeTag = z.object({tag, idempotencyKey:key}).strict();
 export function canonical(value) {

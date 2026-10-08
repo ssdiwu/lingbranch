@@ -34,7 +34,11 @@ node <skill-directory>/scripts/lingbranch.mjs call update_inspiration --json-fil
 
 `idempotencyKey` 由调用者按本次操作生成，8–100 字符，只含字母、数字、下划线和短横线。示例键需替换；同一请求重试保留原键，不能为每次尝试换新键。
 
-更新请求携带 `id`、刚读回的 `expectedUpdatedAt`、稳定请求键和 `patch`。连接使用 `connect_inspirations` 的 `fromId/toId`，移除连线使用工具返回的 `connectionId`。标签、归档和附件也通过实际工具 schema 调用。
+更新请求携带 `id`、刚读回的 `expectedUpdatedAt`、稳定请求键和 `patch`。标签、归档和附件也通过实际工具 schema 调用。
+
+连接调用 `connect_inspirations`，提供 `fromId`、`toId`、`relationType`、具体普通文字 `reason` 与稳定 `idempotencyKey`。只有共同标签时不据此写实线；已有反向或同向连接先读取，说明不同不通过重复创建覆盖。仅传两端的旧调用继续兼容。
+
+说明更新调用 `update_inspiration_connection`，提供 `connectionId`、连接自身的 `expectedUpdatedAt`、稳定请求键和仅含 `relationType`／`reason` 的 `patch`。移除使用 `remove_inspiration_connection` 的 `connectionId`，建议传连接自身的 `expectedUpdatedAt`；笔记版本不能代替连接版本。返回历史回执后再次读取当前连接，后来修改或移除不能被旧请求覆盖或重建。结果未知保留原参数重试；冲突先核对，不自动更换版本号继续。
 
 ## 图文请求
 

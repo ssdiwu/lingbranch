@@ -150,7 +150,7 @@ npm run backup -- /absolute/path/to/backup.lingbranch.json.gz
 npm run restore -- /absolute/path/to/backup.lingbranch.json.gz /absolute/path/to/new-library
 ```
 
-导出文件和恢复目录均不能已存在。当前导出版本 3，包含正文格式和关系说明；支持按原结构校验并恢复版本 1／2 的旧包。恢复先校验资料包、关系、正文图片与附件，再交付新目录，不覆盖正在使用的数据。切换到恢复库时，停止网页、MCP 与其他资料操作，更新数据目录，再重新启动。升级前同样先停止这些入口并备份；首次打开旧库只补纯文本格式，旧正文不会自动成为 Markdown。
+导出文件和恢复目录均不能已存在。当前导出版本 3，包含正文格式和关系说明；支持按原结构校验并恢复版本 1／2 的旧包。恢复先校验资料包、关系、正文图片与附件，再交付新目录，不覆盖正在使用的数据。切换到恢复库时，停止网页、MCP 与其他资料操作，更新数据目录，再重新启动。升级前同样先停止这些入口并备份；v1 旧库为原正文补纯文本格式，v2 保留已有正文格式，升级到 v3 时为旧连接补默认类型、空理由与控制版本。旧正文不会被自动重新解释为 Markdown。
 
 首版资料包解压后上限 128 MiB。不要只复制正在写入的 SQLite 主文件作为备份；保存完整状态使用上述导出入口。导出包含完整个人资料，应自行保管。
 
@@ -176,8 +176,8 @@ npm run licenses
 | 协作与保护边界 | [AGENTS.md](AGENTS.md) |
 | 当前续办、未完成与下一动作 | [PROGRESS.md](PROGRESS.md) |
 | 共同功能交付与运行差异 | [两版边界](doc/editions.md) |
-| 本轮本地与渠道状态 | [0.0.3 记录](doc/release-0.0.3.md) |
-| 已公开发行的版本 | [0.0.2 交付记录](doc/release-0.0.2.md) |
+| 0.0.3 定版与发行证据 | [0.0.3 记录](doc/release-0.0.3.md) |
+| 0.0.2 历史发行 | [0.0.2 交付记录](doc/release-0.0.2.md) |
 | 领域词义 | [GLOSSARY.md](GLOSSARY.md) |
 | 共用体验 | [DESIGN.md](DESIGN.md) |
 | 产品行为与验收 | [spec/local-first-library.md](spec/local-first-library.md) |

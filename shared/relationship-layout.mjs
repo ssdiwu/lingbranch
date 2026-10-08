@@ -60,6 +60,28 @@ export function aggregationBasis(ideas,connections) {
   return {nodeCount:ideas.length,connections:links,tags:[...groups].map(([tag,members])=>({tag,count:members.length,members})).sort((a,b)=>b.count-a.count||(a.tag<b.tag?-1:1)),untaggedCount:ideas.filter(n=>!tagsOf(n).length).length};
 }
 
+// Read-only hints around one selected node; persisted edges always take priority.
+export function sharedTagPeers(id,ideas,connections,tag='') {
+  const selected=ideas.find(idea=>idea.id===id);
+  if(!selected)return [];
+  const selectedTags=new Set(tagsOf(selected).filter(value=>!tag||value===tag));
+  if(!selectedTags.size)return [];
+  const excluded=new Set([selected.id]);
+  for(const link of connections){
+    if(link.fromId===selected.id)excluded.add(link.toId);
+    if(link.toId===selected.id)excluded.add(link.fromId);
+  }
+  const hints=[];
+  for(const idea of ideas){
+    if(excluded.has(idea.id))continue;
+    const tags=tagsOf(idea).filter(value=>selectedTags.has(value));
+    if(!tags.length)continue;
+    excluded.add(idea.id);
+    hints.push({fromId:selected.id,toId:idea.id,tags});
+  }
+  return hints;
+}
+
 function hashFraction(value) {
   let hash=2166136261;
   for(const char of String(value)){hash^=char.charCodeAt(0);hash=Math.imul(hash,16777619);}

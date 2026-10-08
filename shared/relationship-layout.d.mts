@@ -18,3 +18,4 @@ export function directNeighborhood(id:string|null,connections:{fromId:string;toI
 export function arrangeRelationships<T extends NodePoint & {id:string;tags?:string[]}>(ideas:T[],connections:{fromId:string;toId:string}[],viewport?:{width:number;height:number}):T[];
 export function aggregationBasis<T extends {fromId:string;toId:string}>(ideas:{id:string;tags?:string[]}[],connections:T[]):{nodeCount:number;connections:T[];tags:{tag:string;count:number;members:string[]}[];untaggedCount:number};
 export function previewPosition(point:Point,transform:{panX:number;panY:number;zoom:number},viewport:{width:number;height:number},detailOpen?:boolean):{left:number;top:number;width:number;height:number};
+export function sharedTagPeers(id:string|null,ideas:{id:string;tags?:string[]}[],connections:{fromId:string;toId:string}[],tag?:string):{fromId:string;toId:string;tags:string[]}[];

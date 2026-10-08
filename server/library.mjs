@@ -8,8 +8,9 @@ import * as v from './validation.mjs';
 import * as md from './markdown.mjs';
 import {freeNodePosition} from '../shared/relationship-layout.mjs';
 import {layoutSchema} from '../shared/layout-request.mjs';
+import {CONNECTION_EPOCH,connectionFromRow,connectionCreateSchema,connectionUpdateSchema} from '../shared/connection-model.mjs';
 
-const epoch = '1970-01-01T00:00:00.000Z';
+const epoch = CONNECTION_EPOCH;
 const nextDate = previous => new Date(Math.max(Date.now(), Date.parse(previous || epoch) + 1)).toISOString();
 function freePosition(preferred,occupied){try{return freeNodePosition(preferred,occupied);}catch{v.fail('conflict','附近没有空位，请选择另一个位置。',409);}}
 
@@ -21,7 +22,8 @@ export class Library {
     this.db = new DatabaseSync(join(this.directory, 'library.sqlite'), {timeout:5000});
     this.db.exec('PRAGMA foreign_keys=ON; PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL;');
     const version = this.db.prepare('PRAGMA user_version').get().user_version;
-    if (version > 2) { this.db.close(); throw new Error('资料库版本较新，请使用匹配的 LingBranch 版本。'); }
+    if (version > 3) { this.db.close(); throw new Error('资料库版本较新，请使用匹配的 LingBranch 版本。'); }
+    try {
     if (version === 0) this.transaction(() => {
       this.db.exec(`
         CREATE TABLE IF NOT EXISTS ideas (
@@ -54,6 +56,12 @@ export class Library {
     if (version < 2) this.transaction(() => {
       this.db.exec("ALTER TABLE ideas ADD COLUMN body_format TEXT NOT NULL DEFAULT 'plain' CHECK(body_format IN ('plain','markdown')); PRAGMA user_version=2;");
     });
+    if (version < 3) this.transaction(() => {
+      this.db.exec(`ALTER TABLE connections ADD COLUMN relation_type TEXT NOT NULL DEFAULT 'related' CHECK(relation_type IN ('related','workflow','example','application','extension'));
+        ALTER TABLE connections ADD COLUMN reason TEXT NOT NULL DEFAULT '' CHECK(length(reason)<=500);
+        ALTER TABLE connections ADD COLUMN updated_at TEXT NOT NULL DEFAULT '${epoch}'; PRAGMA user_version=3;`);
+    });
+    } catch (error) { this.db.close(); throw error; }
   }
   close() { this.db.close(); }
   transaction(action, write = true) {
@@ -67,7 +75,7 @@ export class Library {
     if (!row) return {hash};
     if (row.hash !== hash) v.fail('conflict', '该重试标识已用于不同操作或内容，请读取已保存结果。', 409);
     const result = JSON.parse(row.result);
-    return {hash, result:{...result, replayed:true, outcome:result.outcome === 'created' ? (kind === 'attachment' ? 'already_attached' : 'already_saved') : result.outcome}};
+    return {hash, result:{...result, replayed:true, outcome:result.outcome === 'created' ? (kind === 'attachment' ? 'already_attached' : kind === 'connection-create' ? 'already_connected' : 'already_saved') : result.outcome}};
   }
   mutate(kind, input, action) {
     return this.transaction(() => {
@@ -109,7 +117,7 @@ export class Library {
     return {panX:row.pan_x, panY:row.pan_y, zoom:row.zoom, updatedAt:row.updated_at};
   }
   connections() {
-    return this.db.prepare('SELECT id,from_id AS fromId,to_id AS toId FROM connections ORDER BY id').all();
+    return this.db.prepare('SELECT * FROM connections ORDER BY id').all().map(connectionFromRow);
   }
   atlas() {
     return this.transaction(() => ({ideas:this.db.prepare('SELECT * FROM ideas ORDER BY seq').all().map(row => this.ideaFrom(row)),
@@ -224,27 +232,51 @@ export class Library {
       return {outcome:affectedItems.length ? (remove ? 'removed' : 'renamed') : 'unchanged', affectedCount:affectedItems.length,affectedItems};
     });
   }
+  readConnection(value) {
+    const id=v.parse(v.id,value),row=this.db.prepare('SELECT * FROM connections WHERE id=?').get(id);
+    if(!row)v.fail('not_found','没有找到这条关联。',404);
+    return connectionFromRow(row);
+  }
   connect(value) {
-    const input = v.parse(z.object({fromId:v.id,toId:v.id}).strict(),value);
-    if (input.fromId === input.toId) v.fail('invalid_input','请选择两条不同的灵感。');
-    return this.transaction(() => {
-      if (this.readIdea(input.fromId).archived || this.readIdea(input.toId).archived) v.fail('invalid_input','只能连接未归档灵感。');
-      const [from,to] = [input.fromId,input.toId].sort();
-      const existing = this.db.prepare('SELECT id,from_id AS fromId,to_id AS toId FROM connections WHERE from_id=? AND to_id=?').get(from,to);
-      if (existing) return {outcome:'already_connected', connection:existing};
-      const connection = {id:randomUUID(),fromId:from,toId:to};
-      this.db.prepare('INSERT INTO connections VALUES(?,?,?)').run(connection.id,from,to);
+    const parsed=v.parse(connectionCreateSchema,value);
+    if(parsed.fromId===parsed.toId)v.fail('invalid_input','请选择两条不同的灵感。');
+    const [fromId,toId]=[parsed.fromId,parsed.toId].sort(),input={...parsed,fromId,toId};
+    const create=()=>{
+      if(this.readIdea(fromId).archived||this.readIdea(toId).archived)v.fail('invalid_input','只能连接未归档灵感。');
+      const row=this.db.prepare('SELECT * FROM connections WHERE from_id=? AND to_id=?').get(fromId,toId);
+      if(row){
+        const connection=connectionFromRow(row);
+        if(input.relationType!==undefined&&input.relationType!==connection.relationType||input.reason!==undefined&&input.reason!==connection.reason)v.fail('conflict','关联已存在且说明不同，请读取其版本后修改说明。',409);
+        return {outcome:'already_connected',connection};
+      }
+      const connection={id:randomUUID(),fromId,toId,relationType:input.relationType??'related',reason:input.reason??'',updatedAt:nextDate()};
+      this.db.prepare('INSERT INTO connections(id,from_id,to_id,relation_type,reason,updated_at) VALUES(?,?,?,?,?,?)').run(connection.id,fromId,toId,connection.relationType,connection.reason,connection.updatedAt);
       return {outcome:'created',connection};
+    };
+    return input.idempotencyKey?this.mutate('connection-create',input,create):this.transaction(create);
+  }
+  updateConnection(value) {
+    const input=v.parse(connectionUpdateSchema,value);
+    return this.mutate('connection-update',input,()=>{
+      const current=this.readConnection(input.connectionId);
+      if(current.updatedAt!==input.expectedUpdatedAt)v.fail('conflict','关系说明已被其他入口修改，请重新读取后对比。',409);
+      const next={...current,...input.patch};
+      if(next.relationType===current.relationType&&next.reason===current.reason)return {outcome:'unchanged',connection:current};
+      next.updatedAt=nextDate(current.updatedAt);
+      this.db.prepare('UPDATE connections SET relation_type=?,reason=?,updated_at=? WHERE id=? AND updated_at=?').run(next.relationType,next.reason,next.updatedAt,next.id,current.updatedAt);
+      return {outcome:'updated',connection:next};
     });
   }
-  listConnections(id) {
-    this.readIdea(id);
-    return this.connections().filter(link => link.fromId === id || link.toId === id);
-  }
-  removeConnection(value) {
-    const id = v.parse(v.id,value);
-    const result = this.db.prepare('DELETE FROM connections WHERE id=?').run(id);
-    return {outcome:result.changes ? 'removed' : 'unchanged',connectionId:id};
+  listConnections(id) { this.readIdea(id); return this.connections().filter(link=>link.fromId===id||link.toId===id); }
+  removeConnection(value,expectedUpdatedAt) {
+    const id=v.parse(v.id,value);if(expectedUpdatedAt!==undefined)v.parse(v.date,expectedUpdatedAt);
+    return this.transaction(()=>{
+      const row=this.db.prepare('SELECT * FROM connections WHERE id=?').get(id);
+      if(!row)return {outcome:'unchanged',connectionId:id};
+      if(expectedUpdatedAt!==undefined&&row.updated_at!==expectedUpdatedAt)v.fail('conflict','关系说明已更新，请读取最新版本后再移除。',409);
+      this.db.prepare('DELETE FROM connections WHERE id=?').run(id);
+      return {outcome:'removed',connectionId:id};
+    });
   }
   saveCanvas(value) {
     const input = v.parse(v.canvas,value);

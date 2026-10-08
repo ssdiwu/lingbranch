@@ -8,7 +8,8 @@ export type Idea = {
   tags:string[]; x:number; y:number; archived:boolean; createdAt:string; updatedAt:string;
   attachments:Attachment[];
 };
-export type Connection = { id:string; fromId:string; toId:string };
+export type { Connection } from '../../shared/connection-model.mjs';
+import type { Connection } from '../../shared/connection-model.mjs';
 export type CanvasState = { panX:number; panY:number; zoom:number; updatedAt?:string };
 export type Atlas = { ideas:Idea[]; connections:Connection[]; canvas:CanvasState };
 export type TagSummary = { name:string; count:number; activeCount:number; archivedCount:number };

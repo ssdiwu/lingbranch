@@ -50,3 +50,10 @@ compatibility: "需要 Node.js 22.22.3+、本机已安装依赖的 LingBranch �
 ## 验证与交付
 
 报告使用的资料库、保存标识和明确结果，按需读回。部署验收使用独立的示例资料库，并分别说明 CLI、MCP、网页和服务器验证范围。安装此技能不自动配置 MCP、不创建模型账号，也不授予对外发布权限。
+
+
+## 整理语义关联
+
+用户要求整理关系时先完整遍历范围，读取两端正文与当前关联；不把共同标签或通用评估附录直接变成实线。保留有依据的旧连接，新连接写具体 reason，按需要使用 relationType（related/workflow/example/application/extension），保留候选/未验证状态。
+
+connect_inspirations 可提供稳定 idempotencyKey；已存在且说明不同不覆盖。补充或修改已有说明调用 update_inspiration_connection，使用读回的 connectionId/updatedAt 及稳定请求键，patch 只含 relationType/reason。重试保留原参数，历史回执后再读当前关系；不能用重试重建后来移除的连接。移除可以提供 expectedUpdatedAt，过期时重新读取。所有操作保留两端、正文、标签、原件、归档与坐标；真实批量整理前保管完整备份和变更回执。

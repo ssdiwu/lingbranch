@@ -125,7 +125,8 @@ export async function createApplication(config,{dev=false} = {}) {
       }
       if (path === '/api/connections') {
         if (req.method === 'POST') return sendJson(res,200,library.connect(await jsonBody(req)).connection);
-        if (req.method === 'DELETE') { const input = requireFields(await jsonBody(req),['id']); return sendJson(res,200,library.removeConnection(input.id)); }
+        if (req.method === 'PATCH') return sendJson(res,200,library.updateConnection(await jsonBody(req)));
+        if (req.method === 'DELETE') { const input = v.parse(z.object({id:v.id,expectedUpdatedAt:v.date.optional()}).strict(),await jsonBody(req)); return sendJson(res,200,library.removeConnection(input.id,input.expectedUpdatedAt)); }
       }
       const uploadMatch = path.match(/^\/api\/ideas\/([^/]+)\/attachments$/);
       if (uploadMatch && req.method === 'POST') {

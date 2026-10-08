@@ -62,7 +62,7 @@ test('HTTP 空库 → 两条灵感 → 检索连线 → 独立 stdio MCP 更新 
   const found=await f.request('/api/list?query=公园');assert.equal(found.value.items[0].id,first.id);
   const connection=await f.request('/api/connections',{method:'POST',body:{fromId:first.id,toId:second.id}});assert.equal(connection.response.status,200);
   const ai=await mcp(t,f.config.dataDir);
-  const tools=await ai.client.listTools();assert.equal(tools.tools.length,14);assert.ok(tools.tools.every(tool=>tool.inputSchema.type==='object'));
+  const tools=await ai.client.listTools();assert.equal(tools.tools.length,15);assert.ok(tools.tools.every(tool=>tool.inputSchema.type==='object'));
   const read=await ai.call('read_inspiration',{id:first.id});assert.equal(read.body,first.body);
   const changed=await ai.call('update_inspiration',{id:first.id,expectedUpdatedAt:read.updatedAt,patch:{body:'由 MCP 补充的公园观察',tags:['阅读','观察']},idempotencyKey:key()});
   assert.equal(changed.outcome,'updated');assert.equal(changed.isError,false);

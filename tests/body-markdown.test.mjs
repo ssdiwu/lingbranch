@@ -194,8 +194,9 @@ test('资料包：旧包按原格式校验后补字段，新包含格式与引�
 
   // 旧包：去掉 body_format 后仍按原格式校验通过，恢复为 plain
   const raw = JSON.parse((await import('node:zlib')).gunzipSync(bundle).toString('utf8'));
-  assert.equal(raw.version,2,'新资料包明确使用版本2');
+  assert.equal(raw.version,3,'新资料包明确使用版本3');
   raw.version=1;
+  raw.payload.snapshot.connections.forEach(row=>{delete row.relation_type;delete row.reason;delete row.updated_at;});
   for (const row of raw.payload.snapshot.ideas) delete row.body_format;
   raw.sha256 = fingerprint(raw.payload);
   const legacy = gzipSync(Buffer.from(JSON.stringify(raw)));

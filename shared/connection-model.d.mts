@@ -1,0 +1,12 @@
+import { z } from 'zod';
+export type RelationType='related'|'workflow'|'example'|'application'|'extension';
+export type Connection={id:string;fromId:string;toId:string;relationType:RelationType;reason:string;updatedAt:string};
+export const CONNECTION_EPOCH:string;
+export const RELATION_TYPES:ReadonlyArray<{value:RelationType;label:string}>;
+export const relationTypeSchema:z.ZodType<RelationType>;
+export const connectionReasonSchema:z.ZodType<string>;
+export const connectionCreateSchema:z.ZodType<{fromId:string;toId:string;relationType?:RelationType;reason?:string;idempotencyKey?:string}>;
+export const connectionUpdateSchema:z.ZodType<{connectionId:string;expectedUpdatedAt:string;idempotencyKey:string;patch:{relationType?:RelationType;reason?:string}}>;
+export function relationLabel(value?:string):string;
+export function connectionFromRow(row:Record<string,unknown>):Connection;
+export function sameConnectionPair(link:{fromId:string;toId:string},a:string,b:string):boolean;

@@ -17,9 +17,10 @@
 | `list_inspiration_tags` | `includeArchived` 默认 true；返回总数、活跃和归档计数 |
 | `rename_inspiration_tag` | `fromTag/toTag/idempotencyKey`；同名合并 |
 | `remove_inspiration_tag` | `tag/idempotencyKey`；移除标签关系，保留记录 |
-| `connect_inspirations` | `fromId/toId`；返回新建或已有无向连线 |
+| `connect_inspirations` | `fromId/toId`、可选 `relationType/reason/idempotencyKey`；返回连接的类型、理由与 `updatedAt`，重复不改已有说明 |
+| `update_inspiration_connection` | `connectionId/expectedUpdatedAt/idempotencyKey/patch`；只改类型与理由，冲突拒绝，重试保留原请求 |
 | `list_inspiration_connections` | `id`；返回连线列表 |
-| `remove_inspiration_connection` | `connectionId`；重复移除返回 unchanged |
+| `remove_inspiration_connection` | `connectionId`、可选 `expectedUpdatedAt`；版本过期拒绝，重复移除返回 unchanged |
 | `attach_inspiration_file` | `id/name/mimeType/bytes/sha256/idempotencyKey/dataBase64`，可选 `indexedText`；最多 20 MiB |
 | `read_inspiration_attachment` | `attachmentId`、可选 `offset/limit`；每段最多 512 KiB，返回元数据、`dataBase64/offset/nextOffset/complete` |
 
@@ -69,7 +70,7 @@ MCP 接收上限为 32 MiB，覆盖 20 MiB 文件的 Base64 开销。读取沿 `
 | `GET /api/list` | 全量分页，参数与 MCP 列表相同 |
 | `GET /api/search?q=...` | 网页兼容检索，最多 50 条；完整遍历使用 `/api/list` |
 | `GET/PATCH/DELETE /api/tags` | 标签查看、合并、移除；变更需 `idempotencyKey` |
-| `POST/DELETE /api/connections` | 建立 `{fromId,toId}`；移除 `{id}` |
+| `POST/PATCH/DELETE /api/connections` | 建立 `{fromId,toId,relationType?,reason?,idempotencyKey?}`；修改沿连接更新工具同形参数；移除 `{id,expectedUpdatedAt?}` |
 | `PATCH /api/canvas` | `panX/panY/zoom/expectedUpdatedAt/idempotencyKey`；zoom 为 0.0000001–2.5，支持长标题全图概览 |
 | `POST /api/ideas/:id/attachments` | multipart：`file/indexedText/sha256/idempotencyKey` |
 | `GET /api/attachments/:id` | 校验后读取原件；安全图片可 inline，其余强制下载；`?download=1` 强制下载 |
@@ -110,3 +111,5 @@ CLI 是本地文件访问入口，没有网页登录、远程 URL 或 OAuth 选�
 `npm run --silent skill:install` 默认复制到 `~/.agents/skills/lingbranch`；也接受一个末级名为 `lingbranch` 的绝对目标技能目录，保证目录与 frontmatter 的 name 一致。复制正文、CLI 参考、助手脚本与许可证共 4 个普通文件，不建立软链接。任何已存在的目标，包括空目录或软链接，均拒绝覆盖。
 
 安装只复制技能文件，不修改 MCP/AI 客户端配置或模型账号，不创建凭据，也不表示客户端已加载该技能。通过其实际加载流程接入，并在操作前核对同一资料目录。搬移后的使用规则见 [CLI 参考](../skills/lingbranch/references/cli.md)。
+
+连接说明为普通文字（最多500字），类型值由现行spec维护。资料库及完整资料包升级为3；旧v1/v2恢复补默认类型/空理由/初始控制版本，不伪造历史修改时间。旧程序遇到较新SQLite版本会拒绝打开；回退使用升级前备份恢复到新目录，不覆盖正在使用的库。

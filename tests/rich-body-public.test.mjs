@@ -90,7 +90,7 @@ test('HTTP 图文保存 → CLI/MCP 共同更新 → 原件校验 → 重启 →
   const atlas=await f.request('/api/atlas');assert.equal(atlas.connections[0].id,linked.id);assert.equal(atlas.canvas.panX,17);
   assert.equal(atlas.ideas.find(idea=>idea.id===old.id).x,old.x);assert.equal(atlas.ideas.find(idea=>idea.id===old.id).y,old.y);
   const exported=Buffer.from(await (await fetch(f.config.origin+'/api/export')).arrayBuffer());
-  assert.equal(JSON.parse(gunzipSync(exported)).version,2);
+  assert.equal(JSON.parse(gunzipSync(exported)).version,3);
   const bundlePath=join(f.directory,'bundle.lingbranch.json.gz'),target=join(f.directory,'restored');await writeFile(bundlePath,exported);
   const restored=JSON.parse((await execFile(process.execPath,[join(projectRoot,'server/backup.mjs'),'restore',bundlePath,target],{cwd:tmpdir()})).stdout);
   assert.equal(restored.ideas,2);
@@ -164,7 +164,8 @@ test('纯文本行内图片字面经 HTTP 保存、字面转换、v2 导出恢�
   const target=join(f.directory,'plain-restored');await restoreBundle(pack,target);
   const restored=JSON.parse((await execFile(process.execPath,[join(projectRoot,'cli/lingbranch.mjs'),'--data-dir',target,'read',plain.id],{cwd:tmpdir()})).stdout);
   assert.equal(restored.body,raw);assert.equal(restored.bodyFormat,'plain');
-  const legacy=JSON.parse(gunzipSync(pack));legacy.version=1;legacy.payload.snapshot.ideas.forEach(row=>delete row.body_format);legacy.sha256=fingerprint(legacy.payload);
+  const legacy=JSON.parse(gunzipSync(pack));legacy.version=1;
+  legacy.payload.snapshot.connections.forEach(row=>{delete row.relation_type;delete row.reason;delete row.updated_at;});legacy.payload.snapshot.ideas.forEach(row=>delete row.body_format);legacy.sha256=fingerprint(legacy.payload);
   const oldTarget=join(f.directory,'v1-restored');await restoreBundle(gzipSync(JSON.stringify(legacy)),oldTarget);
   const oldRead=JSON.parse((await execFile(process.execPath,[join(projectRoot,'cli/lingbranch.mjs'),'--data-dir',oldTarget,'read',plain.id],{cwd:tmpdir()})).stdout);assert.equal(oldRead.body,raw);
   const changed=await f.io.update({id:plain.id,expectedUpdatedAt:plain.updatedAt,idempotencyKey:key(),patch:{body:converted,bodyFormat:'markdown'}});

@@ -8,17 +8,45 @@ import InspirationCard from './inspiration-card';
 
 const batchSize=50;
 
-export default function CardBrowser({active,ideas,viewKey,loading,hasData,error,filtered,archived,onOpen,onReload,onClear,onNew}:{
+export type CardPresentation={density:'standard'|'compact';anchor?:{id:string;offset:number}};
+
+// 先读旧布局再切密度；阅读锚点不借用或写入画布坐标。
+export function captureCardPresentation(density:CardPresentation['density']):CardPresentation {
+  const panel=document.getElementById('atlas-cards-panel');
+  if(!panel)return {density};
+  const bounds=panel.getBoundingClientRect();
+  const card=Array.from(panel.querySelectorAll<HTMLElement>('[data-idea-card]')).find(item=>{
+    const rect=item.getBoundingClientRect();return rect.bottom>bounds.top&&rect.top<bounds.bottom;
+  });
+  return {density,anchor:card?{id:card.dataset.ideaCard!,offset:card.getBoundingClientRect().top-bounds.top}:undefined};
+}
+
+export default function CardBrowser({active,ideas,viewKey,presentation,loading,hasData,error,filtered,archived,onOpen,onReload,onClear,onNew}:{
   active:boolean;ideas:Idea[];viewKey:string;loading:boolean;hasData:boolean;error:string;filtered:boolean;archived:boolean;
+  presentation:CardPresentation;
   onOpen:(id:string)=>void;onReload:()=>void;onClear:()=>void;onNew:()=>void;
 }) {
   const sorted=useMemo(()=>cardBrowseIdeas(ideas),[ideas]);
   const [limit,setLimit]=useState(batchSize);
-  const panel=useRef<HTMLElement|null>(null),end=useRef<HTMLDivElement|null>(null),scrollTop=useRef(0),previousKey=useRef(viewKey);
+  const panel=useRef<HTMLElement|null>(null),end=useRef<HTMLDivElement|null>(null),scrollTop=useRef(0),previousKey=useRef(viewKey),previousDensity=useRef(presentation.density);
   useLayoutEffect(()=>{
-    if(previousKey.current!==viewKey){previousKey.current=viewKey;scrollTop.current=0;setLimit(batchSize);}
-    if(active&&panel.current)panel.current.scrollTop=scrollTop.current;
-  },[active,viewKey]);
+    const rangeChanged=previousKey.current!==viewKey,densityChanged=previousDensity.current!==presentation.density;
+    previousKey.current=viewKey;previousDensity.current=presentation.density;
+    if(rangeChanged){scrollTop.current=0;setLimit(batchSize);}
+    if(active&&panel.current){
+      const surface=panel.current;
+      surface.scrollTop=scrollTop.current;
+      if(densityChanged&&!rangeChanged&&presentation.anchor){
+        const anchor=Array.from(surface.querySelectorAll<HTMLElement>('[data-idea-card]')).find(card=>card.dataset.ideaCard===presentation.anchor!.id);
+        // 长卡片顶部已滚出时，收缩后仍至少保留一段可见内容。
+        if(anchor){
+          const offset=Math.max(presentation.anchor.offset,24-anchor.offsetHeight);
+          surface.scrollTop+=anchor.getBoundingClientRect().top-surface.getBoundingClientRect().top-offset;
+        }
+      }
+      scrollTop.current=surface.scrollTop;
+    }
+  },[active,viewKey,presentation]);
   const shown=sorted.slice(0,limit);
   useEffect(()=>{
     if(!active||loading||!hasData||limit>=sorted.length||!panel.current||!end.current)return;
@@ -30,9 +58,9 @@ export default function CardBrowser({active,ideas,viewKey,loading,hasData,error,
     },{root:panel.current,rootMargin:'0px 0px 320px 0px'});
     observer.observe(end.current);
     return ()=>{disposed=true;observer.disconnect();};
-  },[active,loading,hasData,limit,sorted.length,viewKey]);
+  },[active,loading,hasData,limit,sorted.length,viewKey,presentation.density]);
   return <main ref={panel} id="atlas-cards-panel" role="tabpanel" aria-labelledby="atlas-cards-tab" tabIndex={0}
-    hidden={!active} className="atlas-card-browser" aria-busy={loading}
+    hidden={!active} className="atlas-card-browser" data-density={presentation.density} aria-busy={loading}
     onScroll={event=>{if(active)scrollTop.current=event.currentTarget.scrollTop;}}>
     {loading?<div className="atlas-browse-loading" role="status" aria-label="正在读取灵感卡片"><span>正在读取灵感…</span><div className="atlas-browse-grid">{[0,1,2].map(index=><div key={index} className="atlas-browse-placeholder" aria-hidden="true"/>)}</div></div>
       :!hasData?<Empty><EmptyHeader><EmptyMedia variant="icon"><RotateCcw/></EmptyMedia><EmptyTitle>无法读取灵感库</EmptyTitle><EmptyDescription>{error}</EmptyDescription></EmptyHeader><EmptyContent><Button onClick={onReload}>重试</Button></EmptyContent></Empty>

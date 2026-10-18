@@ -146,6 +146,24 @@
 .atlas-canvas-shell{display:flex;flex:1;flex-direction:column;min-width:0;min-height:0}.atlas-graph-header{flex:none;padding:18px 28px 12px;background:#152234;border-bottom:1px solid #38506a55}.atlas-graph-header .atlas-canvas-heading{position:static;max-width:100%;flex-wrap:wrap}.atlas-graph-header .atlas-graph-hint{position:static;max-width:100%;margin-top:8px}.atlas-canvas-shell .atlas-canvas{min-width:0;min-height:0}
 @media(max-width:760px){.atlas-graph-header{padding:12px 16px 10px}.atlas-graph-header .atlas-graph-hint{margin-top:6px}}
 
+/* 密度仅作用于卡片浏览，画布预览保留原比例和尺寸。 */
+.atlas-view-controls{display:flex;align-items:flex-start;justify-content:space-between;gap:8px 16px;flex-wrap:wrap}
+.atlas-card-density{display:flex;align-items:center;gap:4px;padding:4px;margin-bottom:12px;border:1px solid #41546b;border-radius:10px;font-size:13px;color:#b9cbe0}
+.atlas-card-density>span{padding:0 6px}.atlas-card-density button{border:0;border-radius:7px;background:transparent;padding:7px 12px;color:inherit;cursor:pointer}
+.atlas-card-density button[aria-pressed=true]{background:#314b6b;color:#eef4fc;font-weight:600}.atlas-card-density button:focus-visible{outline:2px solid #d3e5ff;outline-offset:2px}
+.atlas-card-browser[data-density=compact] .atlas-browse-grid{gap:12px}
+.atlas-card-browser[data-density=compact] .atlas-browse-card{aspect-ratio:auto;height:auto;padding:12px;border-radius:13px}
+.atlas-card-browser[data-density=compact] .atlas-card-body{flex:none;display:flow-root;overflow:visible}
+.atlas-card-browser[data-density=compact] .atlas-card-image{float:right;width:64px;height:64px;max-height:none;margin:0 0 7px 10px;border-radius:7px}
+.atlas-card-browser[data-density=compact] h2{font-size:16px;-webkit-line-clamp:2;margin-bottom:6px}
+.atlas-card-browser[data-density=compact] .atlas-card-body p{-webkit-line-clamp:2}
+.atlas-card-browser[data-density=compact] .atlas-card-tags{clear:both;margin-top:7px}
+.atlas-card-browser[data-density=compact] .atlas-preview-foot{padding-top:6px}
+.atlas-card-browser[data-density=compact] .atlas-card-meta{gap:8px;line-height:1.4}
+.atlas-card-browser[data-density=compact] .atlas-card-meta time{margin-left:0}
+.atlas-card-browser[data-density=compact] .atlas-browse-placeholder{aspect-ratio:auto;height:148px;border-radius:13px}
+@media(max-width:760px){.atlas-card-density>span{display:none}.atlas-card-density button{padding:7px 9px}.atlas-card-browser[data-density=compact] .atlas-browse-grid{gap:10px}}
+
 .atlas-lines line.atlas-tag-hint{stroke:#91a8bd;stroke-width:1;stroke-dasharray:4 6;opacity:.38}.atlas-node.is-tag-peer{color:#c9d8e7}.atlas-node.is-tag-peer .atlas-node-dot{opacity:.68}
 
 .atlas-connection{cursor:pointer;outline:none}.atlas-connection-hit{fill:none;stroke:transparent;stroke-width:14;pointer-events:stroke;vector-effect:non-scaling-stroke}.atlas-connection:focus-visible line{stroke:#d3e5ff;stroke-width:3;opacity:1}.atlas-connection-panel{position:absolute;z-index:34;right:16px;bottom:80px;width:min(380px,calc(100% - 32px));max-height:calc(100% - 112px);overflow:auto;padding:18px;border:1px solid #526d90;border-radius:12px;background:#1b2c41;color:#e1eaf6;font-size:13px;line-height:1.6;box-shadow:0 12px 30px #101a2940}.atlas-connection-panel header{display:flex;justify-content:space-between;align-items:center;gap:12px}.atlas-connection-panel h3{margin:0;font-size:15px;font-weight:650;outline:none}.atlas-connection-panel header button{padding:4px}.atlas-connection-endpoints{display:flex;flex-direction:column;gap:5px;overflow-wrap:anywhere;margin:14px 0}.atlas-connection-endpoints span{color:#9fb4cc;font-size:11px}.atlas-connection-type{font-weight:650;color:#cde2fa}.atlas-connection-reason,.atlas-connection-latest p{white-space:pre-wrap;overflow-wrap:anywhere}.atlas-connection-panel label{display:flex;flex-direction:column;gap:6px;margin:12px 0}.atlas-connection-panel select{padding:8px;border:1px solid #526d90;border-radius:6px;background:#152234;color:#e1eaf6}.atlas-connection-panel textarea{min-height:96px}.atlas-connection-note{color:#aebfd2;font-size:12px}.atlas-connection-actions{display:flex;flex-wrap:wrap;gap:7px}.atlas-connection-error{color:#f0b8be}.atlas-connection-latest{margin-top:12px;padding-top:12px;border-top:1px solid #526d90}.atlas-connection-latest h4{margin:0}.atlas-connection-panel :is(button,select,textarea):focus-visible{outline:2px solid #d3e5ff;outline-offset:2px}@media(max-width:760px){.atlas-connection-panel{right:12px;bottom:116px;width:calc(100% - 24px);max-height:calc(100% - 152px)}}

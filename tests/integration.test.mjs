@@ -94,6 +94,53 @@ test('相同请求重试、异参数冲突、严格版本冲突、无变化结�
   const bad=await f.request('/api/atlas',{method:'POST',body:{title:'bad',ownerId:'someone',idempotencyKey:key()}});assert.equal(bad.response.status,400);
 });
 
+test('调用方分阶段保存正文与标签，经 MCP 写入、网页读回，冲突和历史回执不丢人工标签',async t => {
+  const f=await fixture(t),ai=await mcp(t,f.config.dataDir);
+  const reference=await create(f,'滚动阅读参考',{body:'用户上翻阅读时暂停跟随新输出。',tags:['交互','阅读']});
+  const archived=await create(f,'旧滚动阅读参考',{body:'旧方案。',tags:['阅读']});
+  await f.request(`/api/ideas/${archived.id}`,{method:'PATCH',body:{archived:true,expectedUpdatedAt:archived.updatedAt,idempotencyKey:key()}});
+  const beforeSearch=(await f.request('/api/atlas')).value;
+  const result=await ai.call('search_inspirations',{query:'滚动 阅读',includeArchived:false});
+  assert.deepEqual(result.items.map(item=>item.id),[reference.id]);
+  assert.equal((await ai.call('read_inspiration',{id:reference.id})).body,reference.body);
+  const directory=await ai.call('list_inspiration_tags',{});
+  assert.ok(directory.tags.some(tag=>tag.name==='阅读'));
+  assert.deepEqual((await f.request('/api/atlas')).value,beforeSearch);
+
+  // 标签由调用方在材料完整后选择；创建和附件接口本身不分类或连线。
+  const staged=await ai.call('create_inspiration',{title:'阅读面板：暂停跟随与回到底部',idempotencyKey:key()});
+  assert.deepEqual(staged.item.tags,[]);
+  const bytes=Buffer.from('阅读面板设计原件。');
+  const attachment=await ai.call('attach_inspiration_file',{id:staged.item.id,name:'reading.txt',mimeType:'text/plain',bytes:bytes.length,
+    sha256:sha256(bytes),dataBase64:bytes.toString('base64'),idempotencyKey:key()});
+  assert.equal(attachment.isError,false);
+  const current=await ai.call('read_inspiration',{id:staged.item.id});
+  assert.equal(current.updatedAt,staged.item.updatedAt);assert.deepEqual(current.tags,[]);
+  const final={id:current.id,expectedUpdatedAt:current.updatedAt,idempotencyKey:key(),
+    patch:{body:'用户上翻后暂停跟随；点击回到底部恢复。候选行为尚未联调。',tags:['交互','阅读']}};
+  const saved=await ai.call('update_inspiration',final);assert.equal(saved.isError,false);
+  const web=(await f.request(`/api/ideas/${current.id}`)).value;
+  assert.equal(web.body,final.patch.body);assert.deepEqual(web.tags,final.patch.tags);
+  assert.equal(web.attachments.length,1);assert.equal(web.x,current.x);assert.equal(web.y,current.y);
+  assert.deepEqual((await ai.call('list_inspiration_connections',{id:current.id})).connections,[]);
+
+  const human=await f.request(`/api/ideas/${current.id}`,{method:'PATCH',body:{tags:[...web.tags,'手工保留'],expectedUpdatedAt:web.updatedAt,idempotencyKey:key()}});
+  assert.equal(human.response.status,200);
+  const stale=await ai.call('update_inspiration',{...final,idempotencyKey:key(),patch:{body:'过期正文',tags:final.patch.tags}});
+  assert.equal(stale.isError,true);assert.equal(stale.code,'conflict');
+  const replay=await ai.call('update_inspiration',final);assert.equal(replay.replayed,true);
+  const actual=await ai.call('read_inspiration',{id:current.id});
+  assert.equal(actual.body,final.patch.body);assert.deepEqual(actual.tags,['交互','阅读','手工保留']);
+  assert.equal(actual.updatedAt,human.value.updatedAt);assert.equal(actual.attachments.length,1);
+
+  const bodyOnly=await ai.call('update_inspiration',{id:actual.id,expectedUpdatedAt:actual.updatedAt,idempotencyKey:key(),patch:{body:'仅修改正文。'}});
+  assert.deepEqual(bodyOnly.item.tags,actual.tags);
+  const cleared=await ai.call('update_inspiration',{id:actual.id,expectedUpdatedAt:bodyOnly.item.updatedAt,idempotencyKey:key(),patch:{tags:[]}});
+  assert.deepEqual((await ai.call('read_inspiration',{id:actual.id})).tags,[]);assert.equal(cleared.item.body,'仅修改正文。');
+  await f.restart();
+  assert.deepEqual((await f.request(`/api/ideas/${actual.id}`)).value.tags,[]);
+});
+
 test('跨进程并发新建避开旧位置；重复请求原子去重',async t => {
   const f=await fixture(t),ai=await mcp(t,f.config.dataDir);
   const old=await create(f,'旧卡片',{x:-200,y:-100});

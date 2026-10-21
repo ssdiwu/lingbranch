@@ -116,7 +116,9 @@ npm run --silent skill:install
 npm run --silent skill:install -- /absolute/path/to/skills/lingbranch
 ```
 
-两条命令择一执行，目标末级目录保持为 `lingbranch`，与技能名称一致。安装器复制 **4 个普通文件**：技能正文、CLI 参考、助手脚本和许可证；目标已存在会拒绝覆盖。已有技能先检查版本差异，或选择新目录。技能加载可能需要客户端重新扫描或重启。
+两条命令择一执行，目标末级目录保持为 `lingbranch`，与技能名称一致。安装器复制 **5 个普通文件**：技能正文、共有方法、CLI 参考、助手脚本和许可证；目标已存在会拒绝覆盖。已有技能先检查版本差异，或选择新目录。技能加载可能需要客户端重新扫描或重启。
+
+共有资料方法在本项目 [唯一维护源](skills/shared/library-methods.md) 修改，两个技能目录的 `references/library-methods.md` 均为普通随包副本；读取条件在各自主文中。维护与同步见 [两版维护接缝](doc/editions.md#技能共有方法)。
 
 安装后，CLI 助手由显式配置定位项目。例如在仓库目录执行：
 

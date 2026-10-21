@@ -14,7 +14,7 @@
    npm run --silent skill:install -- /absolute/path/to/workspace/.agents/skills/lingbranch
    ```
 
-   将示例工作区路径换成自己的路径。安装会复制四个普通文件；目标已存在时拒绝覆盖，先核对旧版本或选择另一个工作区。skill 提供操作说明与 CLI 助手，不会自动连接 MCP。
+   将示例工作区路径换成自己的路径。当前安装会复制五个普通文件（含共有资料方法）；目标已存在时拒绝覆盖，先核对旧版本或选择另一个工作区。skill 提供操作说明与 CLI 助手，不会自动连接 MCP。
 
 4. 将 [README 的 MCP JSON 配置](../README.md#连接-mcp)保存为工作区根的 `.mcp.json`。替换 Node.js、仓库和数据目录的绝对路径；其中 `LINGBRANCH_DATA_DIR` 必须与网页一致。如果已有 `.mcp.json`，在保留原服务的前提下添加 `mcpServers.lingbranch`，不要覆盖整份配置。
 5. 新建该工作区的会话，让客户端重新发现 skill 和 MCP。按客户端实际提示允许使用本地工具；本轮无需改全局 MCP、模型账号或全局技能配置。

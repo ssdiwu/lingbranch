@@ -172,7 +172,10 @@ test('skill 安装为普通文件，搬到独立目录可调用 CLI，重复安�
   const f = await fixture(t), destination = join(f.directory,'skills','lingbranch');
   const installed = await command([destination],{...f,entryPath:join(projectRoot,'scripts/install-skill.mjs')});
   assert.equal(installed.code,0);assert.equal(installed.value.outcome,'installed');
-  assert.equal(installed.value.files.length,4);
+  assert.equal(installed.value.files.length,5);
+  const sharedMethod = await readFile(join(projectRoot,'skills/shared/library-methods.md'));
+  assert.deepEqual(await readFile(join(destination,'references/library-methods.md')),sharedMethod);
+  assert.deepEqual(await readFile(join(projectRoot,'skills/lingbranch/references/library-methods.md')),sharedMethod);
   for (const name of installed.value.files) {
     const metadata = await lstat(join(destination,name));
     assert.equal(metadata.isSymbolicLink(),false);assert.equal(metadata.isFile(),true);

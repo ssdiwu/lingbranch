@@ -11,6 +11,7 @@ try {
   if (basename(destination) !== 'lingbranch') throw new Error('目标末级目录必须为 lingbranch，与技能 name 一致。');
   const sources = {
     'SKILL.md':join(projectRoot,'skills/lingbranch/SKILL.md'),
+    'references/library-methods.md':join(projectRoot,'skills/shared/library-methods.md'),
     'references/cli.md':join(projectRoot,'skills/lingbranch/references/cli.md'),
     'scripts/lingbranch.mjs':join(projectRoot,'skills/lingbranch/scripts/lingbranch.mjs'),
     'LICENSE':join(projectRoot,'LICENSE'),
